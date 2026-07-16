@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "lib": ["ES2022", "DOM"],
+    "outDir": ".script-results/browser",
+    "paths": {
+      "ua-compass": ["./src/index.ts"]
+    },
+    "rootDir": "."
+  },
+  "include": ["runtime-tests/**/*.ts"]
+}

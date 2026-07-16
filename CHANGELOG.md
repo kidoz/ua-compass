@@ -18,3 +18,4 @@ All notable changes follow semantic versioning.
 - Broaden fuzz coverage across the input-length limits (both overflow modes), raw `Sec-CH-UA*` headers, structured Client Hints, and custom rule packs.
 - Drop published source maps and declaration maps to keep the archive lean and avoid shipping maps that reference unpublished sources; add `CONTRIBUTING.md`.
 - Raise the minimum supported Node.js to 24 (`engines` and CI).
+- Add tracked architecture, rule-authoring, and fixture/source provenance documentation, plus a real headless-Chromium package smoke test in CI and release workflows.

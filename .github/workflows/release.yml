@@ -30,6 +30,7 @@ jobs:
       - run: pnpm test
       - run: pnpm test:coverage
       - run: pnpm test:types
+      - run: pnpm test:browser
       - run: pnpm audit --prod
       - run: pnpm licenses:check
       - run: pnpm benchmark:check

@@ -28,6 +28,7 @@ UA Compass is a secure, dependency-free parser for User-Agent strings and struct
 - [Accuracy and limitations](#accuracy-and-limitations)
 - [Bundle size](#bundle-size)
 - [Benchmarks](#benchmarks)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -176,7 +177,7 @@ Future imported detection data or fixtures must record their source, author, ret
 
 ## Runtime compatibility
 
-UA Compass is ESM-only and has no CommonJS entry point. It has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. The package declares Node.js 24 or newer; CI tests Node.js 24 and 26. The same runtime-neutral build is intended for modern browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6, and its generated declarations and exact packed archive are verified in a clean TypeScript consumer.
+UA Compass is ESM-only and has no CommonJS entry point. It has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. The package declares Node.js 24 or newer; CI tests Node.js 24 and 26. The same runtime-neutral build is intended for modern browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6; generated declarations and the exact packed archive are verified in a clean TypeScript consumer, and the built ESM package is executed in real headless Chromium.
 
 ## Security
 
@@ -198,11 +199,17 @@ Coverage is deliberately selective rather than universal. Future work includes b
 
 ## Bundle size
 
-The current packed archive is approximately 33 KB (33,080 bytes in the latest local packed-consumer verification); the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
+The current packed archive is approximately 29 KB (29,100 bytes in the latest local packed-consumer verification); the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
 
 ## Benchmarks
 
 `pnpm benchmark` measures the built package with warmup and statistical sampling, fresh-process import and first-parse latency, worker startup, TypeScript compiler diagnostics, and hostile inputs. Shared CI retains JSON artifacts and hard-gates only package size and generous adversarial p95 limits; `pnpm benchmark:regression` is reserved for controlled hardware.
+
+## Documentation
+
+- [Architecture](docs/architecture.md) describes runtime boundaries, module responsibilities, rule execution, immutability, and packaging.
+- [Rule authoring](docs/rule-authoring.md) defines the declarative schema, security limits, precedence rules, and required tests.
+- [Fixture and source provenance](docs/fixture-provenance.md) records fixture authorship, the test inventory, public behavior references, licensing treatment, and the process for future imports.
 
 ## Contributing
 

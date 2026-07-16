@@ -32,10 +32,12 @@
   "sideEffects": false,
   "files": [
     "dist",
+    "docs",
     "README.md",
     "LICENSE",
     "SECURITY.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
   ],
   "exports": {
     ".": {
@@ -50,10 +52,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit && tsc -p tsconfig.browser-test.json --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:types": "pnpm build && tsc -p type-tests/tsconfig.json",
+    "test:browser": "pnpm build && pnpm scripts:prepare && tsc -p tsconfig.browser-test.json && node .script-results/browser-smoke.js",
     "scripts:prepare": "tsc -p tsconfig.scripts.json",
     "release:verify-tag": "pnpm scripts:prepare && node .script-results/verify-release-tag.js",
     "licenses:check": "pnpm scripts:prepare && node .script-results/check-licenses.js",
