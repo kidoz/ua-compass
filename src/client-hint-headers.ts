@@ -3,6 +3,7 @@ import {
   MAX_HINT_HEADER_LENGTH,
   MAX_HINT_STRING_LENGTH,
 } from "./limits.js";
+import { getOwnProperty } from "./own-property.js";
 import type { ClientHintBrand, ClientHints } from "./types.js";
 
 // Normalizes raw `Sec-CH-UA*` request headers into the structured ClientHints
@@ -82,7 +83,8 @@ function readHeader(
   lowerName: string,
   canonicalName: string,
 ): string | undefined {
-  const value = source[lowerName] ?? source[canonicalName];
+  const value =
+    getOwnProperty(source, lowerName) ?? getOwnProperty(source, canonicalName);
   const list: readonly unknown[] | undefined = Array.isArray(value)
     ? value
     : undefined;

@@ -157,6 +157,61 @@ describe("security boundaries", () => {
     );
   });
 
+  it("ignores inherited parser and parse options", () => {
+    const inheritedRulePacks = {
+      customRulePacks: [
+        {
+          name: "inherited",
+          rules: [
+            {
+              id: "inherited-client",
+              match: { all: ["InheritedClient/"] },
+              result: {
+                target: "client",
+                type: "bot",
+                name: "Inherited",
+              },
+            },
+          ],
+        },
+      ],
+      maxUserAgentLength: 1,
+      overflowBehavior: "truncate",
+    };
+    const parser = createParser(
+      Object.create(inheritedRulePacks) as Record<string, never>,
+    );
+    expect(parser.parse("InheritedClient/1").client).toEqual({
+      type: "unknown",
+    });
+    expect(parser.parse("curl/8").ua).toBe("curl/8");
+
+    const parseOptions = Object.create({
+      clientHints: { platform: "Windows" },
+    }) as Record<string, never>;
+    expect(parse("", parseOptions).os).toEqual({});
+  });
+
+  it("ignores inherited hint fields and rejects inherited rule structure", () => {
+    const clientHints = Object.create({
+      platform: "Windows",
+      mobile: true,
+    }) as unknown as { readonly platform?: string; readonly mobile?: boolean };
+    expect(parse("", { clientHints }).os).toEqual({});
+    expect(parse("", { clientHints }).device).toEqual({ type: "unknown" });
+
+    const inheritedRule = Object.create({
+      id: "inherited",
+      match: { all: ["x"] },
+      result: { target: "client", type: "bot" },
+    }) as unknown as DetectionRule;
+    expect(() =>
+      createParser({
+        customRulePacks: [{ name: "inherited", rules: [inheritedRule] }],
+      }),
+    ).toThrow(RuleValidationError);
+  });
+
   it("maintains invariants across deterministic fuzz input", () => {
     let state = 0x1234abcd;
     for (let sample = 0; sample < 1_000; sample += 1) {

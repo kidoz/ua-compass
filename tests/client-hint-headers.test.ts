@@ -157,4 +157,12 @@ describe("clientHintsFromHeaders", () => {
       clientHintsFromHeaders("sec-ch-ua" as unknown as Record<string, unknown>),
     ).toThrow(TypeError);
   });
+
+  it("ignores inherited header values", () => {
+    const headers = Object.create({
+      "sec-ch-ua-platform": '"Windows"',
+      "Sec-CH-UA-Mobile": "?1",
+    }) as Record<string, unknown>;
+    expect(clientHintsFromHeaders(headers)).toBeUndefined();
+  });
 });

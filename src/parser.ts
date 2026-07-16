@@ -5,6 +5,7 @@ import {
   normalizeParserOptions,
   normalizeUserAgent,
 } from "./input.js";
+import { getOwnProperty } from "./own-property.js";
 import { validateRulePacks } from "./rule-validation.js";
 import type {
   DetectionRule,
@@ -28,7 +29,9 @@ class CompassParser implements Parser {
     }
     const record = options as Readonly<Record<string, unknown>>;
     this.#options = normalizeParserOptions(record);
-    const customRules = validateRulePacks(record.customRulePacks);
+    const customRules = validateRulePacks(
+      getOwnProperty(record, "customRulePacks"),
+    );
     this.#rules = Object.freeze([...customRules, ...BUNDLED_RULES]);
   }
 

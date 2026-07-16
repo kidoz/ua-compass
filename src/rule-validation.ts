@@ -5,6 +5,7 @@ import {
   MAX_RULE_STRING_LENGTH,
   MAX_RULE_TOKENS,
 } from "./limits.js";
+import { getOwnProperty } from "./own-property.js";
 import type { DetectionRule, RuleResult } from "./types.js";
 
 const CLIENT_TYPES: ReadonlySet<string> = new Set([
@@ -42,14 +43,18 @@ export function validateRulePacks(packs: unknown): readonly DetectionRule[] {
   for (let packIndex = 0; packIndex < packValues.length; packIndex += 1) {
     const pack = packValues[packIndex];
     if (!isRecord(pack)) throw invalid(packIndex, "must be an object");
-    validateText(pack.name, `customRulePacks[${String(packIndex)}].name`);
-    if (!Array.isArray(pack.rules) || pack.rules.length > MAX_RULES_PER_PACK) {
+    validateText(
+      getOwnProperty(pack, "name"),
+      `customRulePacks[${String(packIndex)}].name`,
+    );
+    const packRules = getOwnProperty(pack, "rules");
+    if (!Array.isArray(packRules) || packRules.length > MAX_RULES_PER_PACK) {
       throw invalid(
         packIndex,
         `rules must contain at most ${String(MAX_RULES_PER_PACK)} entries`,
       );
     }
-    const ruleValues = pack.rules as readonly unknown[];
+    const ruleValues = packRules as readonly unknown[];
     for (let ruleIndex = 0; ruleIndex < ruleValues.length; ruleIndex += 1) {
       const rule = validateRule(ruleValues[ruleIndex], packIndex, ruleIndex);
       if (ids.has(rule.id))
@@ -69,35 +74,48 @@ function validateRule(
 ): DetectionRule {
   if (!isRecord(value))
     throw invalid(packIndex, `rules[${String(ruleIndex)}] must be an object`);
-  const id = validateText(value.id, `rules[${String(ruleIndex)}].id`);
-  const match = value.match;
-  if (!isRecord(match) || !Array.isArray(match.all) || match.all.length < 1) {
+  const id = validateText(
+    getOwnProperty(value, "id"),
+    `rules[${String(ruleIndex)}].id`,
+  );
+  const match = getOwnProperty(value, "match");
+  const allTokens = isRecord(match) ? getOwnProperty(match, "all") : undefined;
+  if (!isRecord(match) || !Array.isArray(allTokens) || allTokens.length < 1) {
     throw invalid(
       packIndex,
       `rules[${String(ruleIndex)}].match.all must be a non-empty array`,
     );
   }
-  if (match.all.length > MAX_RULE_TOKENS) {
+  if (allTokens.length > MAX_RULE_TOKENS) {
     throw invalid(
       packIndex,
       `rules[${String(ruleIndex)}].match.all has too many tokens`,
     );
   }
   const all = Object.freeze(
-    match.all.map((token, tokenIndex): string =>
+    allTokens.map((token, tokenIndex): string =>
       validateToken(
         token,
         `rules[${String(ruleIndex)}].match.all[${String(tokenIndex)}]`,
       ),
     ),
   );
-  const none = validateOptionalTokens(match.none, packIndex, ruleIndex);
-  const result = validateResult(value.result, packIndex, ruleIndex);
+  const none = validateOptionalTokens(
+    getOwnProperty(match, "none"),
+    packIndex,
+    ruleIndex,
+  );
+  const result = validateResult(
+    getOwnProperty(value, "result"),
+    packIndex,
+    ruleIndex,
+  );
+  const rawVersionPrefix = getOwnProperty(value, "versionPrefix");
   const versionPrefix =
-    value.versionPrefix === undefined
+    rawVersionPrefix === undefined
       ? undefined
       : validateToken(
-          value.versionPrefix,
+          rawVersionPrefix,
           `rules[${String(ruleIndex)}].versionPrefix`,
         );
 
@@ -136,29 +154,30 @@ function validateResult(
   packIndex: number,
   ruleIndex: number,
 ): RuleResult {
-  if (!isRecord(value) || !isRuleTarget(value.target)) {
+  const target = isRecord(value) ? getOwnProperty(value, "target") : undefined;
+  if (!isRecord(value) || !isRuleTarget(target)) {
     throw invalid(
       packIndex,
       `rules[${String(ruleIndex)}].result has an invalid target`,
     );
   }
 
+  const rawName = getOwnProperty(value, "name");
   const name =
-    value.name === undefined
-      ? undefined
-      : validateText(value.name, "result.name");
+    rawName === undefined ? undefined : validateText(rawName, "result.name");
+  const rawVersion = getOwnProperty(value, "version");
   const version =
-    value.version === undefined
+    rawVersion === undefined
       ? undefined
-      : validateText(value.version, "result.version");
+      : validateText(rawVersion, "result.version");
   const common = {
     ...(name === undefined ? {} : { name }),
     ...(version === undefined ? {} : { version }),
   };
 
-  switch (value.target) {
+  switch (target) {
     case "browser": {
-      const clientType = value.clientType;
+      const clientType = getOwnProperty(value, "clientType");
       if (
         clientType !== undefined &&
         clientType !== "browser" &&
@@ -176,7 +195,8 @@ function validateResult(
       });
     }
     case "client": {
-      if (typeof value.type !== "string" || !CLIENT_TYPES.has(value.type)) {
+      const type = getOwnProperty(value, "type");
+      if (typeof type !== "string" || !CLIENT_TYPES.has(type)) {
         throw invalid(
           packIndex,
           `rules[${String(ruleIndex)}].result.type is invalid`,
@@ -184,7 +204,7 @@ function validateResult(
       }
       return Object.freeze({
         target: "client",
-        type: value.type,
+        type,
         ...common,
       }) as RuleResult;
     }
@@ -193,36 +213,40 @@ function validateResult(
     case "os":
       return Object.freeze({ target: "os", ...common });
     case "device": {
-      if (typeof value.type !== "string" || !DEVICE_TYPES.has(value.type)) {
+      const type = getOwnProperty(value, "type");
+      if (typeof type !== "string" || !DEVICE_TYPES.has(type)) {
         throw invalid(
           packIndex,
           `rules[${String(ruleIndex)}].result.type is invalid`,
         );
       }
+      const rawVendor = getOwnProperty(value, "vendor");
       const vendor =
-        value.vendor === undefined
+        rawVendor === undefined
           ? undefined
-          : validateText(value.vendor, "result.vendor");
+          : validateText(rawVendor, "result.vendor");
+      const rawModel = getOwnProperty(value, "model");
       const model =
-        value.model === undefined
+        rawModel === undefined
           ? undefined
-          : validateText(value.model, "result.model");
+          : validateText(rawModel, "result.model");
       return Object.freeze({
         target: "device",
-        type: value.type,
+        type,
         ...(vendor === undefined ? {} : { vendor }),
         ...(model === undefined ? {} : { model }),
       }) as RuleResult;
     }
     case "cpu": {
       const architecture = validateText(
-        value.architecture,
+        getOwnProperty(value, "architecture"),
         "result.architecture",
       );
+      const rawBitness = getOwnProperty(value, "bitness");
       const bitness =
-        value.bitness === undefined
+        rawBitness === undefined
           ? undefined
-          : validateText(value.bitness, "result.bitness");
+          : validateText(rawBitness, "result.bitness");
       return Object.freeze({
         target: "cpu",
         architecture,

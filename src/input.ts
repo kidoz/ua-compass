@@ -5,6 +5,7 @@ import {
   MAX_HINT_BRANDS,
   MAX_HINT_STRING_LENGTH,
 } from "./limits.js";
+import { getOwnProperty } from "./own-property.js";
 import type {
   ClientHintBrand,
   ClientHints,
@@ -20,7 +21,8 @@ export function normalizeParserOptions(
   options: Readonly<Record<string, unknown>>,
 ): NormalizedParserOptions {
   const configuredMaximum =
-    options.maxUserAgentLength ?? DEFAULT_MAX_USER_AGENT_LENGTH;
+    getOwnProperty(options, "maxUserAgentLength") ??
+    DEFAULT_MAX_USER_AGENT_LENGTH;
   if (
     typeof configuredMaximum !== "number" ||
     !Number.isSafeInteger(configuredMaximum) ||
@@ -32,7 +34,8 @@ export function normalizeParserOptions(
     );
   }
 
-  const configuredOverflow = options.overflowBehavior ?? "throw";
+  const configuredOverflow =
+    getOwnProperty(options, "overflowBehavior") ?? "throw";
   if (configuredOverflow !== "throw" && configuredOverflow !== "truncate") {
     throw new TypeError('overflowBehavior must be "throw" or "truncate"');
   }
@@ -111,18 +114,21 @@ export function normalizeClientHints(hints: unknown): ClientHints | undefined {
     model?: string;
   } = {};
 
-  if (hints.brands !== undefined)
-    normalized.brands = normalizeBrands(hints.brands, "brands");
-  if (hints.fullVersionList !== undefined) {
+  const brands = getOwnProperty(hints, "brands");
+  if (brands !== undefined)
+    normalized.brands = normalizeBrands(brands, "brands");
+  const fullVersionList = getOwnProperty(hints, "fullVersionList");
+  if (fullVersionList !== undefined) {
     normalized.fullVersionList = normalizeBrands(
-      hints.fullVersionList,
+      fullVersionList,
       "fullVersionList",
     );
   }
-  if (hints.mobile !== undefined) {
-    if (typeof hints.mobile !== "boolean")
+  const mobile = getOwnProperty(hints, "mobile");
+  if (mobile !== undefined) {
+    if (typeof mobile !== "boolean")
       throw new TypeError("clientHints.mobile must be boolean");
-    normalized.mobile = hints.mobile;
+    normalized.mobile = mobile;
   }
 
   for (const key of [
@@ -132,7 +138,7 @@ export function normalizeClientHints(hints: unknown): ClientHints | undefined {
     "bitness",
     "model",
   ] as const) {
-    const value = hints[key];
+    const value = getOwnProperty(hints, key);
     if (value !== undefined) normalized[key] = normalizeHintString(value, key);
   }
 
@@ -144,7 +150,7 @@ export function getClientHints(options: unknown): ClientHints | undefined {
   if (!isRecord(options)) {
     throw new TypeError("parse options must be an object");
   }
-  return normalizeClientHints(options.clientHints);
+  return normalizeClientHints(getOwnProperty(options, "clientHints"));
 }
 
 function normalizeBrands(
@@ -165,13 +171,12 @@ function normalizeBrands(
           `clientHints.${key}[${String(index)}] must be an object`,
         );
       }
+      const brand = getOwnProperty(item, "brand");
+      const version = getOwnProperty(item, "version");
       return Object.freeze({
-        brand: normalizeHintString(
-          item.brand,
-          `${key}[${String(index)}].brand`,
-        ),
+        brand: normalizeHintString(brand, `${key}[${String(index)}].brand`),
         version: normalizeHintString(
-          item.version,
+          version,
           `${key}[${String(index)}].version`,
         ),
       });
