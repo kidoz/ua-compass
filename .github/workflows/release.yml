@@ -35,4 +35,4 @@ jobs:
       - run: pnpm licenses:check
       - run: pnpm benchmark:check
       - run: pnpm pack:consumer -- --output=.release/ua-compass.tgz
-      - run: pnpm publish .release/ua-compass.tgz --access public --provenance
+      - run: pnpm publish .release/ua-compass.tgz --access public --provenance --no-git-checks
