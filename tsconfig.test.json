@@ -3,6 +3,9 @@
   "compilerOptions": {
     "declaration": false,
     "isolatedDeclarations": false,
+    "paths": {
+      "ua-compass": ["./src/index.ts"]
+    },
     "types": ["vitest/globals", "node"]
   },
   "include": [

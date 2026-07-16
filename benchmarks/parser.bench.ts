@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
 
-import { createParser, parse } from "../dist/index.js";
-import type { RulePack } from "../dist/index.js";
+import { createParser, parse } from "ua-compass";
+import type { RulePack } from "ua-compass";
 
 const BENCHMARK_OPTIONS = {
   iterations: 100,
