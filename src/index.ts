@@ -1,6 +1,13 @@
 export { clientHintsFromHeaders } from "./client-hint-headers.js";
 export { InputLimitError, RuleValidationError } from "./errors.js";
-export { isAiClient, isBot } from "./guards.js";
+export {
+  isAiClient,
+  isBot,
+  isChromeFamily,
+  isDesktop,
+  isMobile,
+  isTablet,
+} from "./guards.js";
 export { DEFAULT_MAX_USER_AGENT_LENGTH } from "./limits.js";
 export { createParser, parse } from "./parser.js";
 export type {
