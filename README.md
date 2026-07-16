@@ -150,6 +150,12 @@ const parser = createParser({
 
 Custom rules precede bundled rules and are validated and copied when the parser is created.
 
+### Bundled-rule provenance
+
+The bundled detection rules and test fixtures are original work authored for this repository and distributed under its MIT License. They were introduced in repository commits `b976632` and `0eb22b5`; no third-party parser rule database or test corpus was imported. Rules use independently selected literal product tokens and independently constructed examples based on publicly observable User-Agent behavior and public vendor documentation.
+
+Future imported detection data or fixtures must record their source, author, retrieval date, and license before release. Data without clear MIT-compatible redistribution rights must not be included.
+
 ## API overview
 
 - `parse(userAgent, options?)` parses with secure defaults.
