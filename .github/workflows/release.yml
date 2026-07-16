@@ -36,3 +36,5 @@ jobs:
       - run: pnpm benchmark:check
       - run: pnpm pack:consumer -- --output=.release/ua-compass.tgz
       - run: pnpm publish .release/ua-compass.tgz --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
