@@ -32,6 +32,11 @@ const CHROME_FAMILY_BROWSERS: ReadonlySet<string> = new Set([
   "Android WebView",
 ]);
 
+// Reports whether the client renders with Blink (the Chromium engine). This is
+// an engine-level check, so it is also `true` for Blink-based non-browser
+// clients such as Electron or a headless Chromium crawler; it does not imply
+// `client.type === "browser"`. Combine with `client.type` if a browser-only
+// answer is required.
 export function isChromeFamily(result: ParseResult): boolean {
   if (result.engine.name === "Blink") return true;
   const name = result.browser.name;
