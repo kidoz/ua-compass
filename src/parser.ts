@@ -1,5 +1,6 @@
 import { BUNDLED_RULES } from "./bundled-rules.js";
-import { detect } from "./detect.js";
+import { compileRules, detect } from "./detect.js";
+import type { CompiledRules } from "./detect.js";
 import {
   getClientHints,
   normalizeParserOptions,
@@ -8,7 +9,6 @@ import {
 import { getOwnProperty } from "./own-property.js";
 import { validateRulePacks } from "./rule-validation.js";
 import type {
-  DetectionRule,
   ParseOptions,
   ParseResult,
   Parser,
@@ -17,7 +17,7 @@ import type {
 
 class CompassParser implements Parser {
   readonly #options: ReturnType<typeof normalizeParserOptions>;
-  readonly #rules: readonly DetectionRule[];
+  readonly #rules: CompiledRules;
 
   public constructor(options: unknown) {
     if (
@@ -32,7 +32,7 @@ class CompassParser implements Parser {
     const customRules = validateRulePacks(
       getOwnProperty(record, "customRulePacks"),
     );
-    this.#rules = Object.freeze([...customRules, ...BUNDLED_RULES]);
+    this.#rules = compileRules([...customRules, ...BUNDLED_RULES]);
   }
 
   public parse(userAgent: string, options?: ParseOptions): ParseResult {

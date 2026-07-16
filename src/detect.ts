@@ -20,18 +20,39 @@ interface MutableDetection {
   client: ClientInfo;
 }
 
+// Rules bucketed by target so each detection pass scans only its own target's
+// candidates (in original precedence order) rather than the whole rule list.
+export type CompiledRules = Readonly<
+  Partial<Record<RuleResult["target"], readonly DetectionRule[]>>
+>;
+
+export function compileRules(rules: readonly DetectionRule[]): CompiledRules {
+  const buckets: Partial<Record<RuleResult["target"], DetectionRule[]>> =
+    Object.create(null) as Partial<
+      Record<RuleResult["target"], DetectionRule[]>
+    >;
+  for (const rule of rules) {
+    const target = rule.result.target;
+    (buckets[target] ??= []).push(rule);
+  }
+  for (const key of Object.keys(buckets)) {
+    Object.freeze(buckets[key as RuleResult["target"]]);
+  }
+  return Object.freeze(buckets);
+}
+
 export function detect(
   userAgent: string,
   clientHints: ClientHints | undefined,
-  rules: readonly DetectionRule[],
+  rules: CompiledRules,
 ): ParseResult {
   const detection: MutableDetection = {
-    browser: {},
-    engine: {},
-    os: {},
-    device: { type: "unknown" },
-    cpu: {},
-    client: { type: "unknown" },
+    browser: compact<BrowserInfo>({}),
+    engine: compact<EngineInfo>({}),
+    os: compact<OperatingSystemInfo>({}),
+    device: compact<DeviceInfo>({ type: "unknown" }),
+    cpu: compact<CpuInfo>({}),
+    client: compact<ClientInfo>({ type: "unknown" }),
   };
   const uaReduced = isReducedUserAgent(userAgent);
 
@@ -50,7 +71,7 @@ export function detect(
     detection.client.type !== "browser" &&
     detection.client.type !== "webview"
   ) {
-    detection.browser = {};
+    detection.browser = compact<BrowserInfo>({});
   }
 
   return freezeResult(userAgent, uaReduced, detection);
@@ -110,12 +131,13 @@ function reducedVersionMajor(version: string | undefined): string | undefined {
 function applyFirstRule(
   target: RuleResult["target"],
   userAgent: string,
-  rules: readonly DetectionRule[],
+  rules: CompiledRules,
   detection: MutableDetection,
 ): void {
-  for (const candidate of rules) {
-    if (candidate.result.target !== target || !matches(userAgent, candidate))
-      continue;
+  const candidates = rules[target];
+  if (candidates === undefined) return;
+  for (const candidate of candidates) {
+    if (!matches(userAgent, candidate)) continue;
     applyRuleResult(candidate, userAgent, detection);
     return;
   }
@@ -206,19 +228,32 @@ function applyClientHints(
 
   const platform = normalizePlatform(hints.platform);
   if (platform !== undefined) {
+    // A low-entropy platform hint often arrives without a platform version.
+    // When the hint agrees with the UA-derived OS, keep the real UA version
+    // rather than discarding it for an empty one.
+    const hintVersion = osVersionFromHints(platform, hints.platformVersion);
     detection.os = compact<OperatingSystemInfo>({
       name: platform,
-      version: osVersionFromHints(platform, hints.platformVersion),
+      version:
+        hintVersion ??
+        (detection.os.name === platform ? detection.os.version : undefined),
     });
   }
 
   if (hints.mobile !== undefined) {
-    detection.device = compact<DeviceInfo>({
-      type: hints.mobile
+    // The mobile hint refines a low-confidence class but must not override a
+    // more specific UA device (tablet, tv, console, wearable, xr): promote to
+    // mobile only from unknown/desktop, and demote a stale mobile to unknown.
+    const current = detection.device.type;
+    const type = hints.mobile
+      ? current === "unknown" || current === "desktop"
         ? "mobile"
-        : detection.device.type === "mobile"
-          ? "unknown"
-          : detection.device.type,
+        : current
+      : current === "mobile"
+        ? "unknown"
+        : current;
+    detection.device = compact<DeviceInfo>({
+      type,
       vendor: detection.device.vendor,
       model:
         hints.model === ""
@@ -235,6 +270,13 @@ function applyClientHints(
   if (hints.architecture !== undefined && hints.architecture !== "") {
     detection.cpu = compact<CpuInfo>({
       architecture: normalizeArchitecture(hints.architecture, hints.bitness),
+      bitness: hints.bitness,
+    });
+  } else if (hints.bitness !== undefined && hints.bitness !== "") {
+    // A bitness-only hint still refines the UA CPU evidence; keep any
+    // UA-derived architecture and apply the reported bitness.
+    detection.cpu = compact<CpuInfo>({
+      architecture: detection.cpu.architecture,
       bitness: hints.bitness,
     });
   }
@@ -388,14 +430,16 @@ function freezeResult(
   const device = Object.freeze(detection.device);
   const cpu = Object.freeze(detection.cpu);
   const client = Object.freeze(detection.client);
-  return Object.freeze({
-    ua: userAgent,
-    uaReduced,
-    browser,
-    engine,
-    os,
-    device,
-    cpu,
-    client,
-  });
+  return Object.freeze(
+    compact<ParseResult>({
+      ua: userAgent,
+      uaReduced,
+      browser,
+      engine,
+      os,
+      device,
+      cpu,
+      client,
+    }),
+  );
 }
