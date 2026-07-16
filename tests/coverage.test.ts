@@ -307,6 +307,197 @@ describe("additional CPU architectures", () => {
   });
 });
 
+describe("additional Chromium-family browsers take precedence over Chrome", () => {
+  it.each([
+    [
+      "Mozilla/5.0 (Linux; Android 11; KFRAWI Build/RS8331N) AppleWebKit/537.36 (KHTML, like Gecko) Silk/122.1.0 like Chrome/122.0.6261.120 Safari/537.36",
+      "Amazon Silk",
+      "122.1.0",
+    ],
+    [
+      "Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/33.1.0.2.24 SamsungBrowser/4.0 Chrome/122.0.6261.120 VR Safari/537.36",
+      "Meta Quest Browser",
+      "33.1.0.2.24",
+    ],
+    [
+      "Mozilla/5.0 (Linux; U; Android 13; 2210132C Build/TP1A.220624.014) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/122.0.6261.120 Mobile Safari/537.36 XiaoMi/MiuiBrowser/17.2.5",
+      "MIUI Browser",
+      "17.2.5",
+    ],
+    [
+      "Mozilla/5.0 (Linux; Android 12; ELS-NX9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 HuaweiBrowser/14.0.5.310 Mobile Safari/537.36",
+      "Huawei Browser",
+      "14.0.5.310",
+    ],
+    [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Whale/3.25.232.19 Safari/537.36",
+      "Whale",
+      "3.25.232.19",
+    ],
+    [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36 Maxthon/7.1.8.2000",
+      "Maxthon",
+      "7.1.8.2000",
+    ],
+  ])("detects %s as a Blink browser", (ua, name, version) => {
+    const result = parse(ua);
+    expect(result.browser).toEqual({
+      name,
+      version,
+      major: version.split(".", 1)[0],
+    });
+    expect(result.engine.name).toBe("Blink");
+    expect(result.client).toEqual({ type: "browser", name, version });
+  });
+});
+
+describe("Gecko-family forks take precedence over generic Firefox", () => {
+  it("detects Waterfox with the Gecko engine", () => {
+    const result = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0 Waterfox/6.5.5",
+    );
+    expect(result.browser).toEqual({
+      name: "Waterfox",
+      version: "6.5.5",
+      major: "6",
+    });
+    expect(result.engine).toEqual({ name: "Gecko", version: "115.0" });
+    expect(result.os).toEqual({ name: "Windows", version: "10.0" });
+  });
+
+  it("detects Pale Moon with the Goanna engine", () => {
+    const result = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Goanna/6.5 PaleMoon/33.1.0",
+    );
+    expect(result.browser).toEqual({
+      name: "Pale Moon",
+      version: "33.1.0",
+      major: "33",
+    });
+    expect(result.engine).toEqual({ name: "Goanna", version: "6.5" });
+  });
+
+  it("detects SeaMonkey and its Gecko engine without a Firefox token", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 SeaMonkey/2.53.18",
+    );
+    expect(result.browser).toEqual({
+      name: "SeaMonkey",
+      version: "2.53.18",
+      major: "2",
+    });
+    expect(result.engine).toEqual({ name: "Gecko", version: "91.0" });
+    expect(result.os.name).toBe("Linux");
+  });
+});
+
+describe("BSD and Solaris desktop operating systems", () => {
+  it("detects FreeBSD with an amd64 CPU", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; FreeBSD amd64; rv:115.0) Gecko/20100101 Firefox/115.0",
+    );
+    expect(result.os).toEqual({ name: "FreeBSD" });
+    expect(result.cpu).toEqual({ architecture: "x86_64", bitness: "64" });
+    expect(result.device.type).toBe("desktop");
+    expect(result.browser.name).toBe("Firefox");
+  });
+
+  it("detects OpenBSD before the generic Linux fallback", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; OpenBSD amd64; rv:109.0) Gecko/20100101 Firefox/115.0",
+    );
+    expect(result.os).toEqual({ name: "OpenBSD" });
+  });
+
+  it("detects NetBSD running a Blink browser", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; NetBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+    );
+    expect(result.os).toEqual({ name: "NetBSD" });
+    expect(result.engine.name).toBe("Blink");
+  });
+
+  it("maps SunOS to Solaris", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; SunOS i86pc; rv:115.0) Gecko/20100101 Firefox/115.0",
+    );
+    expect(result.os).toEqual({ name: "Solaris" });
+  });
+});
+
+describe("additional crawlers, preview, monitoring, and feed bots", () => {
+  it.each([
+    [
+      "Mozilla/5.0 (compatible; DotBot/1.2; https://opensiteexplorer.org/dotbot; help@moz.com)",
+      "crawler",
+      "DotBot",
+      "1.2",
+    ],
+    [
+      "Mozilla/5.0 (compatible; SeznamBot/4.0; +http://napoveda.seznam.cz/seznambot-intro/)",
+      "crawler",
+      "SeznamBot",
+      "4.0",
+    ],
+    [
+      "Mozilla/5.0 (compatible; Yeti/1.1; +https://naver.me/spd)",
+      "crawler",
+      "Naver Yeti",
+      "1.1",
+    ],
+    ["Googlebot-Image/1.0", "crawler", "Googlebot-Image", "1.0"],
+    [
+      "Mozilla/5.0 (compatible; Pinterestbot/1.0; +https://www.pinterest.com/bot.html)",
+      "bot",
+      "Pinterestbot",
+      "1.0",
+    ],
+    [
+      "Mozilla/5.0 (compatible; redditbot/1.0; +http://www.reddit.com/feedback)",
+      "bot",
+      "redditbot",
+      "1.0",
+    ],
+    [
+      "Mozilla/5.0 (compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+      "bot",
+      "UptimeRobot",
+      "2.0",
+    ],
+    [
+      "Mozilla/5.0 (compatible; Feedly/1.0; +http://www.feedly.com/fetcher.html)",
+      "bot",
+      "Feedly",
+      "1.0",
+    ],
+  ])("classifies %s", (ua, type, name, version) => {
+    const result = parse(ua);
+    expect(result.client).toEqual({ type, name, version });
+    expect(result.browser).toEqual({});
+  });
+
+  it("classifies MJ12bot without a parsed version", () => {
+    const result = parse(
+      "Mozilla/5.0 (compatible; MJ12bot/v1.4.8; http://mj12bot.com/)",
+    );
+    expect(result.client).toEqual({ type: "crawler", name: "MJ12bot" });
+    expect(result.browser).toEqual({});
+  });
+
+  it("classifies the underscore-delimited Pingdom bot by name", () => {
+    const result = parse(
+      "Pingdom.com_bot_version_1.4_(http://www.pingdom.com/)",
+    );
+    expect(result.client).toEqual({ type: "bot", name: "Pingdom" });
+    expect(result.browser).toEqual({});
+  });
+
+  it("keeps Googlebot-Image distinct from the generic Googlebot rule", () => {
+    const result = parse("Googlebot-Image/1.0");
+    expect(result.client.name).toBe("Googlebot-Image");
+  });
+});
+
 describe("malformed and boundary tokens", () => {
   it("keeps the browser name when a version is absent", () => {
     const result = parse(

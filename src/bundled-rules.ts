@@ -64,6 +64,35 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     match: { all: ["SemrushBot"] },
     result: { target: "client", type: "crawler", name: "SemrushBot" },
   }),
+  rule({
+    id: "client-googlebot-image",
+    match: { all: ["Googlebot-Image/"] },
+    result: { target: "client", type: "crawler", name: "Googlebot-Image" },
+    versionPrefix: "Googlebot-Image/",
+  }),
+  rule({
+    id: "client-mj12bot",
+    match: { all: ["MJ12bot/"] },
+    result: { target: "client", type: "crawler", name: "MJ12bot" },
+  }),
+  rule({
+    id: "client-dotbot",
+    match: { all: ["DotBot/"] },
+    result: { target: "client", type: "crawler", name: "DotBot" },
+    versionPrefix: "DotBot/",
+  }),
+  rule({
+    id: "client-seznambot",
+    match: { all: ["SeznamBot/"] },
+    result: { target: "client", type: "crawler", name: "SeznamBot" },
+    versionPrefix: "SeznamBot/",
+  }),
+  rule({
+    id: "client-naver-yeti",
+    match: { all: ["Yeti/"] },
+    result: { target: "client", type: "crawler", name: "Naver Yeti" },
+    versionPrefix: "Yeti/",
+  }),
   // --- Clients: AI crawlers (training and AI-search indexing) ------------
   rule({
     id: "client-gptbot",
@@ -198,6 +227,36 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     result: { target: "client", type: "bot", name: "WhatsApp" },
     versionPrefix: "WhatsApp/",
   }),
+  rule({
+    id: "client-pinterestbot",
+    match: { all: ["Pinterestbot/"] },
+    result: { target: "client", type: "bot", name: "Pinterestbot" },
+    versionPrefix: "Pinterestbot/",
+  }),
+  rule({
+    id: "client-redditbot",
+    match: { all: ["redditbot/"] },
+    result: { target: "client", type: "bot", name: "redditbot" },
+    versionPrefix: "redditbot/",
+  }),
+  // --- Clients: monitoring and feed fetchers -----------------------------
+  rule({
+    id: "client-uptimerobot",
+    match: { all: ["UptimeRobot/"] },
+    result: { target: "client", type: "bot", name: "UptimeRobot" },
+    versionPrefix: "UptimeRobot/",
+  }),
+  rule({
+    id: "client-pingdom",
+    match: { all: ["Pingdom"] },
+    result: { target: "client", type: "bot", name: "Pingdom" },
+  }),
+  rule({
+    id: "client-feedly",
+    match: { all: ["Feedly/"] },
+    result: { target: "client", type: "bot", name: "Feedly" },
+    versionPrefix: "Feedly/",
+  }),
   // --- Clients: command-line tools ---------------------------------------
   rule({
     id: "client-curl",
@@ -314,6 +373,45 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     versionPrefix: "Chrome/",
   }),
   // --- Browsers: Chromium family (before generic Chrome) -----------------
+  // Vendor Chromium browsers precede Samsung/Edge/Opera because several ship a
+  // compatibility SamsungBrowser or Chrome token alongside their own product
+  // token (for example Meta Quest carries SamsungBrowser/).
+  rule({
+    id: "browser-oculus",
+    match: { all: ["OculusBrowser/"] },
+    result: { target: "browser", name: "Meta Quest Browser" },
+    versionPrefix: "OculusBrowser/",
+  }),
+  rule({
+    id: "browser-silk",
+    match: { all: ["Silk/"] },
+    result: { target: "browser", name: "Amazon Silk" },
+    versionPrefix: "Silk/",
+  }),
+  rule({
+    id: "browser-miui",
+    match: { all: ["MiuiBrowser/"] },
+    result: { target: "browser", name: "MIUI Browser" },
+    versionPrefix: "MiuiBrowser/",
+  }),
+  rule({
+    id: "browser-huawei",
+    match: { all: ["HuaweiBrowser/"] },
+    result: { target: "browser", name: "Huawei Browser" },
+    versionPrefix: "HuaweiBrowser/",
+  }),
+  rule({
+    id: "browser-whale",
+    match: { all: ["Whale/"] },
+    result: { target: "browser", name: "Whale" },
+    versionPrefix: "Whale/",
+  }),
+  rule({
+    id: "browser-maxthon",
+    match: { all: ["Maxthon/"] },
+    result: { target: "browser", name: "Maxthon" },
+    versionPrefix: "Maxthon/",
+  }),
   rule({
     id: "browser-edge",
     match: { all: ["Edg/"] },
@@ -405,6 +503,26 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     versionPrefix: "Chromium/",
   }),
   // --- Browsers: Gecko, legacy IE, and generic fallbacks -----------------
+  // Gecko-family forks precede generic Firefox because they carry the Firefox
+  // compatibility token in addition to their own product token.
+  rule({
+    id: "browser-waterfox",
+    match: { all: ["Waterfox/"] },
+    result: { target: "browser", name: "Waterfox" },
+    versionPrefix: "Waterfox/",
+  }),
+  rule({
+    id: "browser-palemoon",
+    match: { all: ["PaleMoon/"] },
+    result: { target: "browser", name: "Pale Moon" },
+    versionPrefix: "PaleMoon/",
+  }),
+  rule({
+    id: "browser-seamonkey",
+    match: { all: ["SeaMonkey/"] },
+    result: { target: "browser", name: "SeaMonkey" },
+    versionPrefix: "SeaMonkey/",
+  }),
   rule({
     id: "browser-firefox",
     match: { all: ["Firefox/"] },
@@ -466,8 +584,17 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     result: { target: "engine", name: "Blink" },
   }),
   rule({
+    id: "engine-goanna",
+    match: { all: ["Goanna/"] },
+    result: { target: "engine", name: "Goanna" },
+    versionPrefix: "Goanna/",
+  }),
+  // A literal `Gecko/` token (distinct from the `like Gecko` clause carried by
+  // WebKit/Blink) marks the Gecko engine; not every Gecko build (for example
+  // SeaMonkey) also emits a `Firefox/` token.
+  rule({
     id: "engine-gecko",
-    match: { all: ["Gecko/", "Firefox/"] },
+    match: { all: ["Gecko/"] },
     result: { target: "engine", name: "Gecko" },
     versionPrefix: "rv:",
   }),
@@ -535,6 +662,26 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     match: { all: ["Mac OS X "] },
     result: { target: "os", name: "macOS" },
     versionPrefix: "Mac OS X ",
+  }),
+  rule({
+    id: "os-freebsd",
+    match: { all: ["FreeBSD"] },
+    result: { target: "os", name: "FreeBSD" },
+  }),
+  rule({
+    id: "os-openbsd",
+    match: { all: ["OpenBSD"] },
+    result: { target: "os", name: "OpenBSD" },
+  }),
+  rule({
+    id: "os-netbsd",
+    match: { all: ["NetBSD"] },
+    result: { target: "os", name: "NetBSD" },
+  }),
+  rule({
+    id: "os-solaris",
+    match: { all: ["SunOS"] },
+    result: { target: "os", name: "Solaris" },
   }),
   rule({
     id: "os-linux",
@@ -659,6 +806,11 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
   rule({
     id: "cpu-x64",
     match: { all: ["x86_64"] },
+    result: { target: "cpu", architecture: "x86_64", bitness: "64" },
+  }),
+  rule({
+    id: "cpu-amd64",
+    match: { all: ["amd64"] },
     result: { target: "cpu", architecture: "x86_64", bitness: "64" },
   }),
   rule({
