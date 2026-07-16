@@ -150,11 +150,11 @@ const parser = createParser({
 });
 ```
 
-Custom rules precede bundled rules and are validated, copied, and frozen when the parser is created. A parser accepts at most four packs with 64 rules per pack, four literal tokens per `all` or `none` list, and 128 UTF-16 code units per textual rule field. Rule IDs must be unique across all custom packs.
+Custom rules precede bundled rules and are validated, copied, and frozen when the parser is created. A parser accepts at most four packs with 64 rules per pack, four literal tokens per `all` or `none` list, and 128 UTF-16 code units per textual rule field. Rule IDs must be unique across all custom packs and must not reuse a bundled rule ID.
 
 ### Bundled-rule provenance
 
-The bundled detection rules and test fixtures are original work authored for this repository and distributed under its MIT License. Initial rules were introduced in commit `b976632`, expanded in `0eb22b5` and `107602c`, and covered by independently authored feature fixtures in `4af08d1`; no third-party parser rule database or test corpus was imported. Rules use independently selected literal product tokens and independently constructed examples based on publicly observable User-Agent behavior and public vendor documentation.
+The bundled detection rules and test fixtures are original work authored for this repository and distributed under its MIT License. Initial rules were introduced in commit `b976632`, expanded in `0eb22b5` and `107602c`, and covered by independently authored feature fixtures in `4af08d1`; no external rule database or test corpus was imported. Rules use independently selected literal product tokens and independently constructed examples based on publicly observable User-Agent behavior and public vendor documentation.
 
 Future imported detection data or fixtures must record their source, author, retrieval date, and license before release. Data without clear MIT-compatible redistribution rights must not be included.
 
@@ -176,7 +176,7 @@ Future imported detection data or fixtures must record their source, author, ret
 
 ## Runtime compatibility
 
-UA Compass is ESM-only and has no CommonJS entry point. It has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. The package declares Node.js 22 or newer; CI tests Node.js 24 and 26. The same runtime-neutral build is intended for modern browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6, and its generated declarations and exact packed archive are verified in a clean TypeScript consumer.
+UA Compass is ESM-only and has no CommonJS entry point. It has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. The package declares Node.js 24 or newer; CI tests Node.js 24 and 26. The same runtime-neutral build is intended for modern browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6, and its generated declarations and exact packed archive are verified in a clean TypeScript consumer.
 
 ## Security
 
@@ -206,7 +206,7 @@ The current packed archive is approximately 33 KB (33,080 bytes in the latest lo
 
 ## Contributing
 
-Contributions are welcome. Because UA Compass is a clean-room, MIT-licensed implementation, detection data and rules must be independently authored — do not copy tokens, regexes, or fixtures from other parsers or from incompatibly licensed sources.
+Contributions are welcome. UA Compass is an MIT-licensed library, and its detection data and rules must be independently authored — do not copy tokens, regexes, or fixtures from incompatibly licensed sources.
 
 ```sh
 pnpm install
@@ -216,8 +216,8 @@ pnpm typecheck
 pnpm build
 ```
 
-Please open an issue to discuss substantial changes before sending a pull request, keep the security posture intact, and add fixtures for any new detection. See [CHANGELOG.md](CHANGELOG.md) for release history and [SECURITY.md](SECURITY.md) for the security policy.
+Please open an issue to discuss substantial changes before sending a pull request, keep the security posture intact, and add fixtures for any new detection. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow and contribution guidelines, [CHANGELOG.md](CHANGELOG.md) for release history, and [SECURITY.md](SECURITY.md) for the security policy.
 
 ## License
 
-UA Compass is available under the [MIT License](LICENSE). It is an independently authored clean-room implementation, not a fork or port of another parser. The MIT license applies to the library and all bundled detection data, with no copyleft obligations and no commercial tiers: proprietary and commercial use are permitted on the same terms as open source.
+UA Compass is available under the [MIT License](LICENSE). It is an independently authored, original implementation. The MIT license applies to the library and all bundled detection data, with no copyleft obligations and no commercial tiers: proprietary and commercial use are permitted on the same terms as open source.
