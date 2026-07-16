@@ -331,6 +331,51 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     result: { target: "client", type: "library", name: "libwww-perl" },
     versionPrefix: "libwww-perl/",
   }),
+  // --- Clients: email clients --------------------------------------------
+  rule({
+    id: "client-thunderbird",
+    match: { all: ["Thunderbird/"] },
+    result: { target: "client", type: "email", name: "Thunderbird" },
+    versionPrefix: "Thunderbird/",
+  }),
+  rule({
+    id: "client-outlook",
+    match: { all: ["Microsoft Outlook "] },
+    result: { target: "client", type: "email", name: "Microsoft Outlook" },
+    versionPrefix: "Microsoft Outlook ",
+  }),
+  // --- Clients: media players --------------------------------------------
+  rule({
+    id: "client-vlc",
+    match: { all: ["VLC/"] },
+    result: { target: "client", type: "mediaplayer", name: "VLC" },
+    versionPrefix: "VLC/",
+  }),
+  rule({
+    id: "client-itunes",
+    match: { all: ["iTunes/"] },
+    result: { target: "client", type: "mediaplayer", name: "iTunes" },
+    versionPrefix: "iTunes/",
+  }),
+  rule({
+    id: "client-kodi",
+    match: { all: ["Kodi/"] },
+    result: { target: "client", type: "mediaplayer", name: "Kodi" },
+    versionPrefix: "Kodi/",
+  }),
+  rule({
+    id: "client-apple-coremedia",
+    match: { all: ["AppleCoreMedia/"] },
+    result: { target: "client", type: "mediaplayer", name: "AppleCoreMedia" },
+    versionPrefix: "AppleCoreMedia/",
+  }),
+  // --- Clients: embedded application runtimes ----------------------------
+  rule({
+    id: "client-electron",
+    match: { all: ["Electron/"] },
+    result: { target: "client", type: "embedded", name: "Electron" },
+    versionPrefix: "Electron/",
+  }),
   // --- Browsers: named in-app WebViews (before generic Android WebView) ---
   rule({
     id: "browser-facebook",
@@ -689,6 +734,39 @@ export const BUNDLED_RULES: readonly DetectionRule[] = Object.freeze([
     result: { target: "os", name: "Linux" },
   }),
   // --- Devices (specific classes before the desktop fallback) ------------
+  // XR and wearable signatures precede the Android/desktop fallbacks because a
+  // headset or watch otherwise resolves to mobile (Android; Mobile) or desktop
+  // (X11; Linux) from its compatibility tokens.
+  rule({
+    id: "device-meta-quest",
+    match: { all: ["OculusBrowser"] },
+    result: { target: "device", type: "xr", vendor: "Meta" },
+  }),
+  rule({
+    id: "device-apple-watch",
+    match: { all: ["Apple Watch"] },
+    result: {
+      target: "device",
+      type: "wearable",
+      vendor: "Apple",
+      model: "Apple Watch",
+    },
+  }),
+  rule({
+    id: "device-galaxy-watch",
+    match: { all: ["Galaxy Watch"] },
+    result: {
+      target: "device",
+      type: "wearable",
+      vendor: "Samsung",
+      model: "Galaxy Watch",
+    },
+  }),
+  rule({
+    id: "device-smartwatch",
+    match: { all: ["SmartWatch"] },
+    result: { target: "device", type: "wearable" },
+  }),
   rule({
     id: "device-windows-phone",
     match: { all: ["Windows Phone "] },

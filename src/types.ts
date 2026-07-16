@@ -7,6 +7,8 @@ export type ClientType =
   | "ai-assistant"
   | "cli"
   | "library"
+  | "email"
+  | "mediaplayer"
   | "embedded"
   | "unknown";
 
@@ -17,6 +19,7 @@ export type DeviceType =
   | "tv"
   | "console"
   | "wearable"
+  | "xr"
   | "embedded"
   | "unknown";
 
