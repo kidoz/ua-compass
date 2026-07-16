@@ -45,7 +45,7 @@
   },
   "types": "./dist/index.d.ts",
   "scripts": {
-    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\"",
+    "clean": "node scripts/clean.ts",
     "build": "pnpm clean && tsc -p tsconfig.build.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
