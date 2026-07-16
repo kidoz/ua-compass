@@ -46,8 +46,9 @@ pnpm install
   device, and CPU evidence independent.
 - Add positive, negative, ambiguous, malformed, and precedence test cases with
   independently authored fixtures.
-- Only include token data or samples that are redistributable under the MIT
-  License.
+- Follow [Rule authoring](docs/rule-authoring.md) and update
+  [Fixture and source provenance](docs/fixture-provenance.md). Only include
+  token data or samples that are redistributable under the MIT License.
 
 ## Quality gates
 
@@ -60,6 +61,7 @@ pnpm typecheck      # strict TypeScript (src, tests, scripts)
 pnpm test           # Vitest unit/integration tests
 pnpm test:coverage  # coverage floors: 95% stmt/line/func, 90% branch
 pnpm test:types     # generated declarations in a clean TS consumer
+pnpm test:browser   # built ESM package in real headless Chromium
 pnpm build          # ESM build with declarations
 pnpm licenses:check # MIT-compatible dependency licenses
 pnpm benchmark:check # package-size and performance baselines
