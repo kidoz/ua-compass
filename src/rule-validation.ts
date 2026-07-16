@@ -1,3 +1,4 @@
+import { BUNDLED_RULES } from "./bundled-rules.js";
 import { RuleValidationError } from "./errors.js";
 import {
   MAX_RULE_PACKS,
@@ -15,6 +16,8 @@ const CLIENT_TYPES: ReadonlySet<string> = new Set([
   "ai-assistant",
   "cli",
   "library",
+  "email",
+  "mediaplayer",
   "embedded",
 ]);
 const DEVICE_TYPES: ReadonlySet<string> = new Set([
@@ -24,6 +27,7 @@ const DEVICE_TYPES: ReadonlySet<string> = new Set([
   "tv",
   "console",
   "wearable",
+  "xr",
   "embedded",
   "unknown",
 ]);
@@ -39,7 +43,9 @@ export function validateRulePacks(packs: unknown): readonly DetectionRule[] {
 
   const packValues = candidate as readonly unknown[];
   const rules: DetectionRule[] = [];
-  const ids = new Set<string>();
+  // Seed with bundled ids so a custom rule cannot silently reuse a bundled id;
+  // custom rules already win by ordering, so collisions are only confusing.
+  const ids = new Set<string>(BUNDLED_RULES.map((rule): string => rule.id));
   for (let packIndex = 0; packIndex < packValues.length; packIndex += 1) {
     const pack = packValues[packIndex];
     if (!isRecord(pack)) throw invalid(packIndex, "must be an object");
