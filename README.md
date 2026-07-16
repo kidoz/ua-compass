@@ -11,7 +11,7 @@
 
 </div>
 
-UA Compass is parser for User-Agent strings and structured User-Agent Client Hints. It returns immutable browser, engine, operating-system, device, CPU, and client classifications without claiming that ambiguous input is certain.
+UA Compass is a secure, dependency-free parser for User-Agent strings and structured User-Agent Client Hints. It returns immutable browser, engine, operating-system, device, CPU, and client classifications without presenting ambiguous input as certain.
 
 ## Table of contents
 
@@ -42,7 +42,7 @@ UA Compass is parser for User-Agent strings and structured User-Agent Client Hin
 - **Zero runtime dependencies** — ESM-only, no DOM access, no I/O, no import-time side effects.
 - **Bot and AI-client detection** — classifies crawlers, AI crawlers, AI assistants, CLI tools, HTTP libraries, email clients, media players, and embedded runtimes (Electron).
 - **XR and wearable devices** — recognizes Meta Quest headsets (`xr`) and Apple Watch / Wear OS wearables alongside desktop, mobile, tablet, TV, and console classes.
-- **Type guards** — `isBot`, `isAiClient`, `isChromeFamily`, `isMobile`, `isTablet`, and `isDesktop` for ergonomic category checks.
+- **Classification helpers** — `isBot`, `isAiClient`, `isChromeFamily`, `isMobile`, `isTablet`, and `isDesktop` provide concise boolean checks over parsed results.
 
 ## Installation
 
@@ -82,7 +82,7 @@ const parser = createParser({
 const result = parser.parse(userAgent);
 ```
 
-The default maximum User-Agent length is 4096 UTF-16 code units. Input over that limit throws `InputLimitError`; `"truncate"` is available when deterministic truncation is more appropriate.
+The default maximum User-Agent length is 4096 UTF-16 code units. Input over that limit throws `InputLimitError`; `"truncate"` is available when deterministic truncation is more appropriate. Configured limits must be integers from 1 through 65,536.
 
 ## Client Hints
 
@@ -104,7 +104,7 @@ const result = parse(userAgent, {
 });
 ```
 
-Recognized structured hints take precedence over lower-confidence UA evidence. Unknown brands and platforms are not guessed. Brand lists are treated as unordered and GREASE entries (for example `"Not/A)Brand"`) are ignored, as the Client Hints specification requires.
+Recognized structured hints take precedence over lower-confidence UA evidence. Unknown brands and platforms are not guessed. Brand lists are treated as unordered, and GREASE-like entries such as `"Not/A)Brand"` are ignored.
 
 Raw `Sec-CH-UA*` request headers can be normalized directly:
 
@@ -120,7 +120,7 @@ const result = parse(request.headers.get("user-agent") ?? "", {
 });
 ```
 
-Header parsing is bounded and regex-free; malformed or oversized header values are dropped rather than thrown, so hostile wire data cannot make a server error out. High-entropy headers (`Sec-CH-UA-Model`, `Sec-CH-UA-Platform-Version`, and others) are only sent after an `Accept-CH` opt-in, and Client Hints ship in Chromium-based browsers only — UA-string parsing remains the permanent primary path.
+Header parsing is bounded and regex-free; malformed or oversized header values are dropped rather than thrown, so hostile wire data cannot make a server error out. Availability of individual Client Hints varies by browser, request policy, and granted high-entropy hints, so UA-string parsing remains the fallback path.
 
 ## Reduced User-Agents
 
@@ -150,11 +150,11 @@ const parser = createParser({
 });
 ```
 
-Custom rules precede bundled rules and are validated and copied when the parser is created.
+Custom rules precede bundled rules and are validated, copied, and frozen when the parser is created. A parser accepts at most four packs with 64 rules per pack, four literal tokens per `all` or `none` list, and 128 UTF-16 code units per textual rule field. Rule IDs must be unique across all custom packs.
 
 ### Bundled-rule provenance
 
-The bundled detection rules and test fixtures are original work authored for this repository and distributed under its MIT License. They were introduced in repository commits `b976632` and `0eb22b5`; no third-party parser rule database or test corpus was imported. Rules use independently selected literal product tokens and independently constructed examples based on publicly observable User-Agent behavior and public vendor documentation.
+The bundled detection rules and test fixtures are original work authored for this repository and distributed under its MIT License. Initial rules were introduced in commit `b976632`, expanded in `0eb22b5` and `107602c`, and covered by independently authored feature fixtures in `4af08d1`; no third-party parser rule database or test corpus was imported. Rules use independently selected literal product tokens and independently constructed examples based on publicly observable User-Agent behavior and public vendor documentation.
 
 Future imported detection data or fixtures must record their source, author, retrieval date, and license before release. Data without clear MIT-compatible redistribution rights must not be included.
 
@@ -166,8 +166,8 @@ Future imported detection data or fixtures must record their source, author, ret
 - `ParserOptions` controls input limits, overflow behavior, and custom rule packs.
 - `ParseOptions` supplies structured Client Hints per call.
 - `clientHintsFromHeaders(headers)` normalizes raw `Sec-CH-UA*` headers into `ClientHints`.
-- `isBot(result)` and `isAiClient(result)` classify client categories.
-- `isChromeFamily(result)` reports whether the browser renders with Blink; `isMobile`, `isTablet`, and `isDesktop` check `device.type`.
+- `isBot(result)` returns true for bots, crawlers, and AI crawlers; `isAiClient(result)` covers AI crawlers and user-triggered AI assistants.
+- `isChromeFamily(result)` recognizes Blink-engine or known Chromium-family results; `isMobile`, `isTablet`, and `isDesktop` check `device.type`.
 - `InputLimitError` and `RuleValidationError` distinguish predictable boundary failures.
 
 `client.type` can be `browser`, `webview`, `bot`, `crawler`, `ai-crawler`, `ai-assistant`, `cli`, `library`, `email`, `mediaplayer`, `embedded`, or `unknown`. AI training and search crawlers (GPTBot, ClaudeBot, OAI-SearchBot, CCBot, and others) report `ai-crawler`; user-triggered AI fetchers (ChatGPT-User, Claude-User, Perplexity-User) report `ai-assistant`. Email clients (Thunderbird, Outlook), media players (VLC, iTunes, Kodi, AppleCoreMedia), and Electron apps report `email`, `mediaplayer`, and `embedded` respectively. Non-browser clients leave `browser` empty. A User-Agent match identifies who a client claims to be — it is not verification, so treat bot classification as advisory rather than authentication.
@@ -176,23 +176,29 @@ Future imported detection data or fixtures must record their source, author, ret
 
 ## Runtime compatibility
 
-UA Compass is ESM-only and has no CommonJS entry point. It targets modern JavaScript runtimes and has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. It is intended for Node.js 22+, browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6, and its generated declarations and exact packed archive are verified in a clean TypeScript consumer.
+UA Compass is ESM-only and has no CommonJS entry point. It has no runtime dependencies, DOM access, Node-specific imports, I/O, or import-time environmental side effects. The package declares Node.js 22 or newer; CI tests Node.js 24 and 26. The same runtime-neutral build is intended for modern browsers, workers, serverless functions, and edge runtimes. The library builds with TypeScript 6, and its generated declarations and exact packed archive are verified in a clean TypeScript consumer.
 
 ## Security
 
-User-Agent strings and custom rules are untrusted input. UA Compass bounds input and rule-pack sizes, normalizes malformed UTF-16, uses literal matching instead of dynamic regular expressions, validates extension shapes, and freezes returned data.
+User-Agent strings, Client Hints, raw headers, parser options, and custom rules cross untrusted-input boundaries. UA Compass bounds inputs and rule packs, normalizes malformed UTF-16, uses literal matching instead of dynamic regular expressions, ignores inherited configuration properties, validates extension shapes, and freezes normalized configuration and returned data. Parsing performs no I/O and keeps no cross-call mutable state.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md). Please do not open a public issue for security reports.
 
 ## Accuracy and limitations
 
-This `0.1.0` slice covers the major desktop and mobile browsers (Chrome, Microsoft Edge, Firefox, Safari/Mobile Safari, Opera, Samsung Internet, Yandex, Vivaldi, UC, Chromium) plus vendor Chromium builds (Amazon Silk, Meta Quest Browser, MIUI, Huawei, Naver Whale, Maxthon) and Gecko forks (Waterfox, Pale Moon, SeaMonkey), their iOS variants (Chrome, Firefox, Edge, Opera via `CriOS`/`FxiOS`/`EdgiOS`/`OPiOS`), legacy Internet Explorer and EdgeHTML/Presto/Goanna engines, and named in-app WebViews (Facebook, Instagram, WeChat, LINE, Snapchat). It classifies core operating systems (Windows, macOS, Linux, Android, iOS, ChromeOS, Windows Phone, KaiOS, Tizen, webOS, FreeBSD, OpenBSD, NetBSD, Solaris), device classes including consoles (PlayStation, Xbox, Nintendo) and TV/streaming devices (Apple TV, Roku, Chromecast, Samsung), common CPU tokens, and a broad set of crawlers, AI crawlers, social preview, monitoring, and feed bots, CLI tools, and HTTP libraries (Googlebot, bingbot, GPTBot, ClaudeBot, MJ12bot, DotBot, SeznamBot, UptimeRobot, Feedly, curl, python-requests, and more). Client Hint brand mapping covers Microsoft Edge, Opera, Brave, Samsung Internet, Vivaldi, Chrome, and Chromium.
+The `0.1.0` rule set provides focused coverage for:
 
-Still future work: wearables, detailed Android model extraction, distro-level Linux, and out-of-band bot verification metadata. User-Agent values can be reduced or spoofed; use feature detection when behavior depends on capabilities. Reduced Chromium UAs are flagged via `uaReduced`, and Windows reports no version on reduced UAs because NT `10.0` cannot distinguish Windows 10 from 11 — supply `Sec-CH-UA-Platform-Version` to recover it.
+- Major browsers and engines: Chrome/Chromium, Microsoft Edge, Firefox, Safari/Mobile Safari, Opera, Samsung Internet, vendor Chromium builds, Gecko forks, common WebViews, and selected legacy engines.
+- Operating systems and CPUs: Windows, macOS, iOS, Android, ChromeOS, Linux, BSD variants, Solaris, mobile/TV operating systems, and common ARM/x86 architecture tokens.
+- Devices: desktop, mobile, tablet, TV/streaming, console, selected wearables, Meta Quest XR, and unknown classifications.
+- Non-browser clients: search and AI crawlers, user-triggered AI assistants, social-preview and monitoring bots, CLI tools, HTTP libraries, email clients, media players, and Electron.
+- Client Hint brands: Microsoft Edge, Opera, Brave, Samsung Internet, Vivaldi, Chrome, and Chromium.
+
+Coverage is deliberately selective rather than universal. Future work includes broader wearable and Android-model coverage from UA strings, distro-level Linux identification, and out-of-band bot verification metadata. User-Agent values can be reduced or spoofed; use feature detection when behavior depends on capabilities. Reduced Chromium UAs are flagged via `uaReduced`, and Windows reports no version on reduced UAs because NT `10.0` cannot distinguish Windows 10 from 11—supply `Sec-CH-UA-Platform-Version` to recover it.
 
 ## Bundle size
 
-The current packed archive is approximately 28 KB; the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
+The current packed archive is approximately 33 KB (33,080 bytes in the latest local packed-consumer verification); the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
 
 ## Benchmarks
 
