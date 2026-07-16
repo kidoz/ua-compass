@@ -3,6 +3,10 @@ import {
   createParser,
   isAiClient,
   isBot,
+  isChromeFamily,
+  isDesktop,
+  isMobile,
+  isTablet,
   parse,
 } from "ua-compass";
 import type { ClientHints, ParseResult, Parser, RulePack } from "ua-compass";
@@ -32,3 +36,7 @@ const headerHints: ClientHints | undefined = clientHintsFromHeaders({
 parse("", { clientHints: headerHints });
 isBot(result);
 isAiClient(result);
+isChromeFamily(result);
+isMobile(result);
+isTablet(result);
+isDesktop(result);
