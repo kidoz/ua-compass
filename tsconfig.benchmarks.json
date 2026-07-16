@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "benchmarks",
+    "outDir": ".benchmark-results/runner",
+    "types": ["node"]
+  },
+  "include": [
+    "benchmarks/lib.ts",
+    "benchmarks/run.ts",
+    "benchmarks/cold-start.ts",
+    "benchmarks/cold-child.ts",
+    "benchmarks/cold-worker-child.ts",
+    "benchmarks/typescript.ts",
+    "benchmarks/security.ts"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "name": "ua-compass",
+  "version": "0.1.0",
+  "description": "A secure, MIT-licensed User-Agent parser for modern TypeScript.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Aleksandr Pavlov <ckidoz@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kidoz/ua-compass.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kidoz/ua-compass/issues"
+  },
+  "homepage": "https://github.com/kidoz/ua-compass#readme",
+  "keywords": [
+    "user-agent",
+    "ua-parser",
+    "user-agent-parser",
+    "client-hints",
+    "sec-ch-ua",
+    "browser-detection",
+    "device-detection",
+    "bot-detection",
+    "typescript",
+    "esm"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.13.1",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:types": "pnpm build && tsc -p type-tests/tsconfig.json",
+    "scripts:prepare": "tsc -p tsconfig.scripts.json",
+    "licenses:check": "pnpm scripts:prepare && node .script-results/check-licenses.js",
+    "benchmark:prepare": "tsc -p tsconfig.benchmarks.json",
+    "benchmark": "pnpm build && pnpm benchmark:prepare && node .benchmark-results/runner/run.js",
+    "benchmark:check": "pnpm build && pnpm benchmark:prepare && node .benchmark-results/runner/run.js --check",
+    "benchmark:runtime": "pnpm build && vitest bench",
+    "benchmark:cold": "pnpm build && pnpm benchmark:prepare && node .benchmark-results/runner/cold-start.js",
+    "benchmark:types": "pnpm benchmark:prepare && node .benchmark-results/runner/typescript.js",
+    "benchmark:security": "pnpm build && pnpm benchmark:prepare && node .benchmark-results/runner/security.js --check",
+    "benchmark:regression": "pnpm build && pnpm benchmark:prepare && node .benchmark-results/runner/run.js --check --strict-runtime",
+    "pack:check": "pnpm pack --dry-run",
+    "pack:consumer": "pnpm build && pnpm scripts:prepare && node .script-results/packed-consumer.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.1.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "10.7.0",
+    "jiti": "2.7.0",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10"
+  }
+}

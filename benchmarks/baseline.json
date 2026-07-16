@@ -1,0 +1,53 @@
+{
+  "recordedAt": "2026-07-16",
+  "environment": "Apple Silicon, Node.js 26.5.0",
+  "recordedPackedBytes": 29219,
+  "maximumPackedBytes": 50000,
+  "runtime": {
+    "parse Chrome desktop": {
+      "medianMilliseconds": 0.006458
+    },
+    "parse rotating representative corpus": {
+      "medianMilliseconds": 0.006583
+    },
+    "parse with structured Client Hints": {
+      "medianMilliseconds": 0.007625
+    },
+    "parse unknown client": {
+      "medianMilliseconds": 0.006041
+    },
+    "create default parser": {
+      "medianMilliseconds": 0.00525
+    },
+    "create parser with maximum-size rule pack": {
+      "medianMilliseconds": 0.020209
+    }
+  },
+  "coldStart": {
+    "importMedianMilliseconds": 1.673,
+    "firstParseMedianMilliseconds": 0.251,
+    "workerStartupImportAndParseMedianMilliseconds": 12.846
+  },
+  "typescript": {
+    "checkOnlyTotalMedianMilliseconds": 170,
+    "declarationBuildTotalMedianMilliseconds": 140,
+    "checkOnlyMemoryMedianKilobytes": 71803,
+    "declarationBuildMemoryMedianKilobytes": 43932
+  },
+  "security": {
+    "recordedP95Milliseconds": {
+      "maximumLengthNearMiss": 0.501,
+      "maximumRulePackNearMiss": 0.797,
+      "malformedUnicode": 0.06
+    },
+    "maximumP95Milliseconds": {
+      "maximumLengthNearMiss": 10,
+      "maximumRulePackNearMiss": 10,
+      "malformedUnicode": 10
+    }
+  },
+  "policy": {
+    "strictRuntimeMaximumRatio": 1.15,
+    "notes": "Shared CI records runtime, cold-start, and compiler results but hard-gates only generous security and exact package-size limits. The strict 15% runtime ratio is for repeated runs on controlled hardware and baseline updates require review."
+  }
+}
