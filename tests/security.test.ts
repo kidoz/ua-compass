@@ -1,10 +1,69 @@
 import { describe, expect, it } from "vitest";
 
-import { RuleValidationError, createParser, parse } from "../src/index.js";
+import {
+  InputLimitError,
+  RuleValidationError,
+  clientHintsFromHeaders,
+  createParser,
+  parse,
+} from "../src/index.js";
 import type { DetectionRule, RulePack, RuleResult } from "../src/index.js";
 
 function unsafePack(rule: unknown): readonly RulePack[] {
   return [{ name: "test", rules: [rule as DetectionRule] }];
+}
+
+// Deterministic LCG so fuzz runs are reproducible (no Math.random / Date).
+function lcg(seed: number): () => number {
+  let state = seed | 0;
+  return (): number => {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) | 0;
+    return state >>> 0;
+  };
+}
+
+const CLIENT_TYPES = new Set([
+  "browser",
+  "webview",
+  "bot",
+  "crawler",
+  "ai-crawler",
+  "ai-assistant",
+  "cli",
+  "library",
+  "email",
+  "mediaplayer",
+  "embedded",
+  "unknown",
+]);
+const STRUCTURED_TOKENS = [
+  "Chrome/",
+  "Firefox/",
+  "Safari/",
+  "Mozilla/5.0",
+  "Android",
+  "Windows NT ",
+  "OculusBrowser",
+  "Googlebot/",
+  ";",
+  '"',
+  "(",
+  ")",
+  "\\",
+  "__proto__",
+];
+
+function fuzzString(next: () => number, maxLength: number): string {
+  const length = next() % (maxLength + 1);
+  let value = "";
+  while (value.length < length) {
+    if (next() % 8 === 0) {
+      value += STRUCTURED_TOKENS[next() % STRUCTURED_TOKENS.length] ?? "";
+    } else {
+      value += String.fromCharCode(next() & 0xffff);
+    }
+  }
+  return value;
 }
 
 describe("security boundaries", () => {
@@ -74,6 +133,25 @@ describe("security boundaries", () => {
     expect(() => createParser({ customRulePacks: unsafePack(rule) })).toThrow(
       message,
     );
+  });
+
+  it("rejects a custom rule id that collides with a bundled rule id", () => {
+    expect(() =>
+      createParser({
+        customRulePacks: [
+          {
+            name: "override",
+            rules: [
+              {
+                id: "browser-chrome",
+                match: { all: ["Custom/"] },
+                result: { target: "browser", name: "Custom" },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("duplicate rule id browser-chrome");
   });
 
   it("rejects duplicate ids, excessive token counts, rules, and long fields", () => {
@@ -213,27 +291,156 @@ describe("security boundaries", () => {
   });
 
   it("maintains invariants across deterministic fuzz input", () => {
-    let state = 0x1234abcd;
-    for (let sample = 0; sample < 1_000; sample += 1) {
-      let value = "";
-      const length = sample % 257;
-      for (let index = 0; index < length; index += 1) {
-        state = (Math.imul(state, 1_664_525) + 1_013_904_223) | 0;
-        value += String.fromCharCode(state & 0xffff);
-      }
+    const next = lcg(0x1234abcd);
+    for (let sample = 0; sample < 2_000; sample += 1) {
+      const value = fuzzString(next, 400);
       const result = parse(value);
-      expect(result.ua.length).toBeLessThanOrEqual(length);
+      expect(result.ua.length).toBeLessThanOrEqual(value.length);
       expect(Object.isFrozen(result)).toBe(true);
-      expect([
-        "browser",
-        "webview",
-        "bot",
-        "crawler",
-        "cli",
-        "library",
-        "embedded",
-        "unknown",
-      ]).toContain(result.client.type);
+      expect(Object.isFrozen(result.browser)).toBe(true);
+      expect(Object.isFrozen(result.device)).toBe(true);
+      expect(CLIENT_TYPES.has(result.client.type)).toBe(true);
+    }
+  });
+
+  it("fails predictably at and beyond the length limits in both overflow modes", () => {
+    const limit = 65_536;
+    const throwParser = createParser({
+      maxUserAgentLength: limit,
+      overflowBehavior: "throw",
+    });
+    const truncateParser = createParser({
+      maxUserAgentLength: limit,
+      overflowBehavior: "truncate",
+    });
+    for (const length of [
+      0, 1, 4095, 4096, 4097, 65_535, 65_536, 65_537, 200_000,
+    ]) {
+      const ua = `Chrome/122.0.0.0 ${"A".repeat(length)}`;
+
+      // Default parser: throws above the 4096 default, otherwise succeeds.
+      if (ua.length > 4096) {
+        expect(() => parse(ua)).toThrow(InputLimitError);
+      } else {
+        expect(Object.isFrozen(parse(ua))).toBe(true);
+      }
+
+      // Truncate mode never throws and always bounds the retained input.
+      const truncated = truncateParser.parse(ua);
+      expect(truncated.ua.length).toBeLessThanOrEqual(limit);
+      expect(Object.isFrozen(truncated)).toBe(true);
+
+      // Throw mode at the configured limit.
+      if (ua.length > limit) {
+        expect(() => throwParser.parse(ua)).toThrow(InputLimitError);
+      } else {
+        expect(Object.isFrozen(throwParser.parse(ua))).toBe(true);
+      }
+    }
+  });
+
+  it("never throws while normalizing fuzzed Sec-CH-UA* headers", () => {
+    const next = lcg(0x0badf00d);
+    const keys = [
+      "sec-ch-ua",
+      "sec-ch-ua-full-version-list",
+      "sec-ch-ua-mobile",
+      "sec-ch-ua-platform",
+      "sec-ch-ua-platform-version",
+      "sec-ch-ua-arch",
+      "sec-ch-ua-bitness",
+      "sec-ch-ua-model",
+    ];
+    for (let sample = 0; sample < 1_000; sample += 1) {
+      const headers: Record<string, string> = {};
+      for (const key of keys) {
+        if (next() % 3 !== 0) headers[key] = fuzzString(next, 300);
+      }
+      const hints = clientHintsFromHeaders(headers);
+      expect(hints === undefined || typeof hints === "object").toBe(true);
+      // The normalized hints must be safe to feed back into parse().
+      const result = parse("Mozilla/5.0", { clientHints: hints });
+      expect(Object.isFrozen(result)).toBe(true);
+    }
+  });
+
+  it("either parses or throws a typed error for fuzzed structured Client Hints", () => {
+    const next = lcg(0x51513);
+    const platforms = ["Windows", "macOS", "Android", "Linux", "Fuchsia", ""];
+    for (let sample = 0; sample < 1_000; sample += 1) {
+      const brands = Array.from(
+        { length: next() % 20 },
+        (): { brand: string; version: string } => ({
+          brand: fuzzString(next, 40),
+          version: fuzzString(next, 12),
+        }),
+      );
+      const hints = {
+        brands,
+        mobile: next() % 4 === 0 ? ("maybe" as never) : next() % 2 === 0,
+        platform: platforms[next() % platforms.length] ?? "",
+        platformVersion: fuzzString(next, 20),
+        architecture: fuzzString(next, 12),
+        bitness: fuzzString(next, 6),
+        model: fuzzString(next, 40),
+      };
+      try {
+        const result = parse("Mozilla/5.0 Chrome/122.0.0.0", {
+          clientHints: hints,
+        });
+        expect(Object.isFrozen(result)).toBe(true);
+      } catch (error) {
+        // Malformed hints fail predictably with a typed error, never a hang.
+        expect(
+          error instanceof RuleValidationError || error instanceof TypeError,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("either builds a parser or throws RuleValidationError for fuzzed custom packs", () => {
+    const next = lcg(0xc0ffee);
+    const targets = [
+      "browser",
+      "client",
+      "engine",
+      "os",
+      "device",
+      "cpu",
+      "??",
+    ];
+    const types = ["bot", "browser", "email", "xr", "unknown", "spaceship"];
+    for (let sample = 0; sample < 1_000; sample += 1) {
+      const rules = Array.from(
+        { length: next() % 6 },
+        (_unused, index): unknown => ({
+          id: `fuzz-${String(sample)}-${String(index)}`,
+          match: {
+            all: Array.from({ length: 1 + (next() % 5) }, (): string =>
+              fuzzString(next, 20),
+            ),
+          },
+          result: {
+            target: targets[next() % targets.length],
+            type: types[next() % types.length],
+            name: fuzzString(next, 20),
+            architecture: fuzzString(next, 12),
+          },
+        }),
+      );
+      try {
+        const parser = createParser({
+          customRulePacks: [
+            {
+              name: `pack-${String(sample)}`,
+              rules: rules as readonly DetectionRule[],
+            },
+          ],
+        });
+        expect(Object.isFrozen(parser.parse("target"))).toBe(true);
+      } catch (error) {
+        expect(error).toBeInstanceOf(RuleValidationError);
+      }
     }
   });
 

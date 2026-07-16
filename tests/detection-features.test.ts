@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createParser,
   isChromeFamily,
   isDesktop,
   isMobile,
@@ -103,6 +104,108 @@ describe("XR headsets and wearable devices", () => {
     );
     expect(result.device.type).toBe("wearable");
     expect(result.os.name).toBe("Android");
+  });
+});
+
+describe("custom rule packs accept the newly added result types", () => {
+  it.each(["email", "mediaplayer"] as const)(
+    "accepts the %s client type",
+    (type) => {
+      const parser = createParser({
+        customRulePacks: [
+          {
+            name: "custom",
+            rules: [
+              {
+                id: `custom-${type}`,
+                match: { all: ["CustomToken/"] },
+                result: { target: "client", type, name: "CustomToken" },
+                versionPrefix: "CustomToken/",
+              },
+            ],
+          },
+        ],
+      });
+      expect(parser.parse("CustomToken/1.0").client).toEqual({
+        type,
+        name: "CustomToken",
+        version: "1.0",
+      });
+    },
+  );
+
+  it("accepts the xr device type", () => {
+    const parser = createParser({
+      customRulePacks: [
+        {
+          name: "custom-xr",
+          rules: [
+            {
+              id: "custom-headset",
+              match: { all: ["CustomHeadset"] },
+              result: { target: "device", type: "xr", vendor: "Acme" },
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      parser.parse("Mozilla/5.0 (CustomHeadset) Chrome/122.0.6261.120").device,
+    ).toEqual({ type: "xr", vendor: "Acme" });
+  });
+});
+
+describe("Client Hints merge refinements", () => {
+  it("keeps a real UA OS version when the platform hint carries no version", () => {
+    const result = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
+      { clientHints: { platform: "Windows" } },
+    );
+    expect(result.os).toEqual({ name: "Windows", version: "10.0" });
+  });
+
+  it("overrides the OS name but reports no version when the platform hint disagrees", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; Linux x86_64; rv:115.0) Gecko/20100101 Firefox/115.0",
+      { clientHints: { platform: "Windows" } },
+    );
+    expect(result.os).toEqual({ name: "Windows" });
+  });
+
+  it("does not let a mobile hint clobber a more specific UA device class", () => {
+    const tablet = parse(
+      "Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+      { clientHints: { mobile: true } },
+    );
+    expect(tablet.device.type).toBe("tablet");
+
+    const quest = parse(
+      "Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/40.2.0.10.61 Chrome/138.0.7204.235 VR Safari/537.36",
+      { clientHints: { mobile: true } },
+    );
+    expect(quest.device.type).toBe("xr");
+  });
+
+  it("still upgrades an unknown/desktop device to mobile on a positive hint", () => {
+    const result = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+      { clientHints: { mobile: true } },
+    );
+    expect(result.device.type).toBe("mobile");
+  });
+
+  it("applies a bitness-only hint while keeping the UA architecture", () => {
+    const noArch = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { bitness: "64" } },
+    );
+    expect(noArch.cpu).toEqual({ bitness: "64" });
+
+    const withArch = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+      { clientHints: { bitness: "32" } },
+    );
+    expect(withArch.cpu).toEqual({ architecture: "x86_64", bitness: "32" });
   });
 });
 
