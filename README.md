@@ -40,7 +40,9 @@ UA Compass is parser for User-Agent strings and structured User-Agent Client Hin
 - **Reduced-UA detection** — flags frozen Chromium User-Agents and recovers real values from Client Hints where the browser grants them.
 - **Safe custom rules** — bounded literal-token rule packs; caller-provided regular expressions are deliberately unsupported.
 - **Zero runtime dependencies** — ESM-only, no DOM access, no I/O, no import-time side effects.
-- **Bot and AI-client detection** — classifies crawlers, AI crawlers, AI assistants, CLI tools, and HTTP libraries.
+- **Bot and AI-client detection** — classifies crawlers, AI crawlers, AI assistants, CLI tools, HTTP libraries, email clients, media players, and embedded runtimes (Electron).
+- **XR and wearable devices** — recognizes Meta Quest headsets (`xr`) and Apple Watch / Wear OS wearables alongside desktop, mobile, tablet, TV, and console classes.
+- **Type guards** — `isBot`, `isAiClient`, `isChromeFamily`, `isMobile`, `isTablet`, and `isDesktop` for ergonomic category checks.
 
 ## Installation
 
@@ -165,9 +167,12 @@ Future imported detection data or fixtures must record their source, author, ret
 - `ParseOptions` supplies structured Client Hints per call.
 - `clientHintsFromHeaders(headers)` normalizes raw `Sec-CH-UA*` headers into `ClientHints`.
 - `isBot(result)` and `isAiClient(result)` classify client categories.
+- `isChromeFamily(result)` reports whether the browser renders with Blink; `isMobile`, `isTablet`, and `isDesktop` check `device.type`.
 - `InputLimitError` and `RuleValidationError` distinguish predictable boundary failures.
 
-`client.type` can be `browser`, `webview`, `bot`, `crawler`, `ai-crawler`, `ai-assistant`, `cli`, `library`, `embedded`, or `unknown`. AI training and search crawlers (GPTBot, ClaudeBot, OAI-SearchBot, CCBot, and others) report `ai-crawler`; user-triggered AI fetchers (ChatGPT-User, Claude-User, Perplexity-User) report `ai-assistant`. Non-browser clients leave `browser` empty. A User-Agent match identifies who a client claims to be — it is not verification, so treat bot classification as advisory rather than authentication.
+`client.type` can be `browser`, `webview`, `bot`, `crawler`, `ai-crawler`, `ai-assistant`, `cli`, `library`, `email`, `mediaplayer`, `embedded`, or `unknown`. AI training and search crawlers (GPTBot, ClaudeBot, OAI-SearchBot, CCBot, and others) report `ai-crawler`; user-triggered AI fetchers (ChatGPT-User, Claude-User, Perplexity-User) report `ai-assistant`. Email clients (Thunderbird, Outlook), media players (VLC, iTunes, Kodi, AppleCoreMedia), and Electron apps report `email`, `mediaplayer`, and `embedded` respectively. Non-browser clients leave `browser` empty. A User-Agent match identifies who a client claims to be — it is not verification, so treat bot classification as advisory rather than authentication.
+
+`device.type` can be `desktop`, `mobile`, `tablet`, `tv`, `console`, `wearable`, `xr`, `embedded`, or `unknown`. Meta Quest headsets report `xr`; Apple Watch, Galaxy Watch, and Wear OS smartwatches report `wearable`. Because Wear OS exposes no generic watch token, wearable detection keys on explicit product/model tokens, and broader smartwatch coverage remains future work.
 
 ## Runtime compatibility
 
