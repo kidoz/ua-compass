@@ -187,7 +187,7 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md). Please do not open a 
 
 ## Accuracy and limitations
 
-The `0.1.0` rule set provides focused coverage for:
+The `1.0.0` rule set provides focused coverage for:
 
 - Major browsers and engines: Chrome/Chromium, Microsoft Edge, Firefox, Safari/Mobile Safari, Opera, Samsung Internet, vendor Chromium builds, Gecko forks, common WebViews, and selected legacy engines.
 - Operating systems and CPUs: Windows, macOS, iOS, Android, ChromeOS, Linux, BSD variants, Solaris, mobile/TV operating systems, and common ARM/x86 architecture tokens.
@@ -199,7 +199,7 @@ Coverage is deliberately selective rather than universal. Future work includes b
 
 ## Bundle size
 
-The current packed archive is approximately 29 KB (29,100 bytes in the latest local packed-consumer verification); the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
+The current packed archive is approximately 29 KB; the reviewed milestone limit is 50,000 bytes. `pnpm benchmark:check` packs the project and enforces this limit, while `pnpm pack:consumer` installs the exact archive into a clean ESM and TypeScript consumer.
 
 ## Benchmarks
 

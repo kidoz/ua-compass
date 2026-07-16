@@ -2,7 +2,7 @@
 
 All notable changes follow semantic versioning.
 
-## 0.1.0 - Unreleased
+## 1.0.0 - 2026-07-17
 
 - Scaffold the ESM-only TypeScript package and explicit root export.
 - Add immutable parsing results, structured Client Hints, safe custom rule packs, and initial browser/client, engine, OS, device, and CPU coverage.
