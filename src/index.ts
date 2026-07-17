@@ -18,6 +18,7 @@ export {
   isWearable,
   isXr,
 } from "./guards.js";
+export { clientHintsFromUserAgentData } from "./input.js";
 export { DEFAULT_MAX_USER_AGENT_LENGTH } from "./limits.js";
 export { createParser, parse } from "./parser.js";
 export type {

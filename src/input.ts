@@ -159,6 +159,23 @@ export function getClientHints(options: unknown): ClientHints | undefined {
   return normalizeClientHints(getOwnProperty(options, "clientHints"));
 }
 
+// Converts a `navigator.userAgentData` object (the low-entropy fields) merged
+// with any high-entropy values from `getHighEntropyValues()` into the structured
+// `ClientHints` shape accepted by parse()/createParser(). The caller is
+// responsible for reading the DOM and awaiting the high-entropy promise; this
+// function stays DOM-free, stateless, and I/O-free so the core remains
+// runtime-neutral. Field names already match the ClientHints shape, so this
+// validates, copies own-properties, and freezes via the shared normalizer.
+// Returns undefined when no own-properties survive (matching
+// clientHintsFromHeaders) so a caller can branch on "were any hints provided".
+export function clientHintsFromUserAgentData(
+  userAgentData: unknown,
+): ClientHints | undefined {
+  const normalized = normalizeClientHints(userAgentData);
+  if (normalized === undefined) return undefined;
+  return Object.keys(normalized).length === 0 ? undefined : normalized;
+}
+
 function normalizeBrands(
   brands: unknown,
   key: string,

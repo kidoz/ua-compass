@@ -23,17 +23,17 @@ I/O or inspect the host environment during import.
 
 ## Module responsibilities
 
-| Module                       | Responsibility                                                                                  |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| `src/parser.ts`              | Public parser construction, default parser, and coordination.                                   |
-| `src/input.ts`               | User-Agent limits, malformed UTF-16 normalization, parser options, and structured Client Hints. |
-| `src/client-hint-headers.ts` | Bounded, regex-free conversion of raw `Sec-CH-UA*` headers.                                     |
-| `src/rule-validation.ts`     | Runtime validation, limits, copying, and freezing of custom rules.                              |
-| `src/bundled-rules.ts`       | Independently authored literal-token detection rules in precedence order.                       |
-| `src/detect.ts`              | Rule bucketing, matching, Client Hints refinement, result normalization, and freezing.          |
-| `src/guards.ts`              | Boolean classification helpers over `ParseResult` for client and device types.                  |
-| `src/types.ts`               | Public API contracts and declarative rule schema.                                               |
-| `src/limits.ts`              | Security and resource ceilings shared by normalization and validation.                          |
+| Module                       | Responsibility                                                                                                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/parser.ts`              | Public parser construction, default parser, and coordination.                                                                                            |
+| `src/input.ts`               | User-Agent limits, malformed UTF-16 normalization, parser options, structured Client Hints, and the browser-side `clientHintsFromUserAgentData` adapter. |
+| `src/client-hint-headers.ts` | Bounded, regex-free conversion of raw `Sec-CH-UA*` headers.                                                                                              |
+| `src/rule-validation.ts`     | Runtime validation, limits, copying, and freezing of custom rules.                                                                                       |
+| `src/bundled-rules.ts`       | Independently authored literal-token detection rules in precedence order.                                                                                |
+| `src/detect.ts`              | Rule bucketing, matching, Client Hints refinement, result normalization, and freezing.                                                                   |
+| `src/guards.ts`              | Boolean classification helpers over `ParseResult` for client and device types.                                                                           |
+| `src/types.ts`               | Public API contracts and declarative rule schema.                                                                                                        |
+| `src/limits.ts`              | Security and resource ceilings shared by normalization and validation.                                                                                   |
 
 ## Rule execution and precedence
 

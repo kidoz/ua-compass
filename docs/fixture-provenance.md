@@ -23,15 +23,16 @@ coverage was added in `0eb22b5`, `107602c`, and `4af08d1`.
 
 ## Fixture inventory
 
-| File                                | Coverage                                                                                                        | Origin and redistribution basis                                                                   |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `tests/parser.test.ts`              | Public API, major browsers, OS/CPU, custom rules, limits, immutability                                          | Independently composed UA Compass fixtures; MIT original work.                                    |
-| `tests/client-hint-headers.test.ts` | Structured header parsing, GREASE-like brands, `Sec-CH-UA-Form-Factors`, malformed and oversized values         | Synthetic structured-field values derived from public Client Hints formats; MIT original work.    |
-| `tests/reduced-ua.test.ts`          | Chromium reduced version, platform placeholders, and form-factor recovery                                       | Synthetic combinations based on public Chromium reduction behavior; MIT original work.            |
-| `tests/ai-clients.test.ts`          | Search, AI-training, and user-triggered crawler categories                                                      | Synthetic product-token fixtures based on vendors' public crawler identifiers; MIT original work. |
-| `tests/coverage.test.ts`            | Browser, engine, OS, device, CPU, crawler, CLI, and library rule matrix                                         | Independently assembled token combinations; no imported corpus; MIT original work.                |
-| `tests/detection-features.test.ts`  | Email, media player, Electron, XR, wearable, helper, Client Hints and Form-Factors refinements                  | Synthetic product-version combinations authored for UA Compass; MIT original work.                |
-| `tests/security.test.ts`            | Limits, prototype isolation, malformed Unicode, rule validation, `mobile:false` demotion, deterministic fuzzing | Generated or synthetic adversarial values; deterministic local generator; MIT original work.      |
+| File                                | Coverage                                                                                                        | Origin and redistribution basis                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `tests/parser.test.ts`              | Public API, major browsers, OS/CPU, custom rules, limits, immutability                                          | Independently composed UA Compass fixtures; MIT original work.                                          |
+| `tests/client-hint-headers.test.ts` | Structured header parsing, GREASE-like brands, `Sec-CH-UA-Form-Factors`, malformed and oversized values         | Synthetic structured-field values derived from public Client Hints formats; MIT original work.          |
+| `tests/reduced-ua.test.ts`          | Chromium reduced version, platform placeholders, and form-factor recovery                                       | Synthetic combinations based on public Chromium reduction behavior; MIT original work.                  |
+| `tests/ai-clients.test.ts`          | Search, AI-training, and user-triggered crawler categories                                                      | Synthetic product-token fixtures based on vendors' public crawler identifiers; MIT original work.       |
+| `tests/coverage.test.ts`            | Browser, engine, OS, device, CPU, crawler, CLI, and library rule matrix                                         | Independently assembled token combinations; no imported corpus; MIT original work.                      |
+| `tests/detection-features.test.ts`  | Email, media player, Electron, XR, wearable, helper, Client Hints and Form-Factors refinements                  | Synthetic product-version combinations authored for UA Compass; MIT original work.                      |
+| `tests/security.test.ts`            | Limits, prototype isolation, malformed Unicode, rule validation, `mobile:false` demotion, deterministic fuzzing | Generated or synthetic adversarial values; deterministic local generator; MIT original work.            |
+| `tests/user-agent-data.test.ts`     | Browser-side `navigator.userAgentData` adapter, prototype isolation, malformed inputs                           | Synthetic `userAgentData` objects derived from the W3C UA Client Hints JS API shape; MIT original work. |
 
 ## Public reference catalog
 

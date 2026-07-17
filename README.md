@@ -37,7 +37,7 @@ UA Compass is a secure, dependency-free parser for User-Agent strings and struct
 - **Secure by default** — bounds input and rule-pack sizes, normalizes malformed UTF-16, matches with literal tokens instead of dynamic regular expressions, and freezes returned data.
 - **Immutable results** — every `ParseResult` and nested object is deeply frozen and safe to share.
 - **Honest classifications** — ambiguous input reports `"unknown"` rather than guessing; unknown optional scalars are omitted.
-- **Client Hints aware** — recognizes structured `Sec-CH-UA*` hints, prefers them over lower-confidence UA evidence, and normalizes raw headers directly.
+- **Client Hints aware** — recognizes structured `Sec-CH-UA*` hints, prefers them over lower-confidence UA evidence, and normalizes both raw HTTP headers and browser-side `navigator.userAgentData` objects directly.
 - **Reduced-UA detection** — flags frozen Chromium User-Agents and recovers real values from Client Hints where the browser grants them.
 - **Safe custom rules** — bounded literal-token rule packs; caller-provided regular expressions are deliberately unsupported.
 - **Zero runtime dependencies** — ESM-only, no DOM access, no I/O, no import-time side effects.
@@ -123,6 +123,27 @@ const result = parse(request.headers.get("user-agent") ?? "", {
 
 Header parsing is bounded and regex-free; malformed or oversized header values are dropped rather than thrown, so hostile wire data cannot make a server error out. Availability of individual Client Hints varies by browser, request policy, and granted high-entropy hints, so UA-string parsing remains the fallback path.
 
+On the browser side, `navigator.userAgentData` exposes the same hints as a JavaScript object. Merge the low-entropy fields with any values you requested from `getHighEntropyValues()` and pass the result through the adapter:
+
+```ts
+import { clientHintsFromUserAgentData, parse } from "ua-compass";
+
+const uaData = navigator.userAgentData;
+const highEntropy = await uaData.getHighEntropyValues([
+  "fullVersionList",
+  "platformVersion",
+  "architecture",
+  "bitness",
+  "model",
+  "formFactors",
+]);
+const result = parse(navigator.userAgent, {
+  clientHints: clientHintsFromUserAgentData({ ...uaData, ...highEntropy }),
+});
+```
+
+The adapter is DOM-free (the caller reads `navigator` and awaits the promise); it validates, copies own-properties, and freezes via the same path as structured Client Hints input.
+
 `Sec-CH-UA-Mobile` is treated as a UX-preference signal, not a hardware assertion: `?1` promotes an `unknown`/`desktop` device to `mobile` but never overrides a more specific UA-derived class (tablet, TV, console, wearable, XR); `?0` demotes a contradicting `mobile` class to `unknown` rather than asserting `desktop`. iOS Safari and Firefox do not send this hint, so an iOS or mobile UA-derived class is never affected.
 
 When the high-entropy `Sec-CH-UA-Form-Factors` hint is supplied, its `"Watch"` and `"XR"` tokens promote an `unknown`/`desktop`/`mobile` device to `wearable` or `xr` respectively — the only way to recover those classes, since Wear OS emits no distinguishing User-Agent token. Other form-factor values (`Mobile`, `Tablet`, `Desktop`, `EInk`) are ignored because the User-Agent string already exposes them. Form-factor tokens are matched case-sensitively, so a lowercased value cannot promote a class.
@@ -171,6 +192,7 @@ Future imported detection data or fixtures must record their source, author, ret
 - `ParserOptions` controls input limits, overflow behavior, and custom rule packs.
 - `ParseOptions` supplies structured Client Hints per call.
 - `clientHintsFromHeaders(headers)` normalizes raw `Sec-CH-UA*` headers into `ClientHints`.
+- `clientHintsFromUserAgentData(userAgentData)` normalizes a browser-side `navigator.userAgentData` object (merged with `getHighEntropyValues()` results) into `ClientHints`. The caller reads the DOM and awaits the high-entropy promise; the adapter stays DOM-free and reuses the same validation and freezing as the structured-input path.
 - `isBot(result)` returns true for bots, crawlers, and AI crawlers; `isCrawler(result)` is the narrower crawling/indexing view (search and AI-training crawlers); `isAiClient(result)` covers AI crawlers and user-triggered AI assistants.
 - `isChromeFamily(result)` recognizes Blink-engine or known Chromium-family results.
 - Device-type guards: `isMobile`, `isTablet`, `isDesktop`, `isTv`, `isConsole`, `isWearable`, and `isXr`.
