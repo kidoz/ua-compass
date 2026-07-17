@@ -125,6 +125,8 @@ Header parsing is bounded and regex-free; malformed or oversized header values a
 
 `Sec-CH-UA-Mobile` is treated as a UX-preference signal, not a hardware assertion: `?1` promotes an `unknown`/`desktop` device to `mobile` but never overrides a more specific UA-derived class (tablet, TV, console, wearable, XR); `?0` demotes a contradicting `mobile` class to `unknown` rather than asserting `desktop`. iOS Safari and Firefox do not send this hint, so an iOS or mobile UA-derived class is never affected.
 
+When the high-entropy `Sec-CH-UA-Form-Factors` hint is supplied, its `"Watch"` and `"XR"` tokens promote an `unknown`/`desktop`/`mobile` device to `wearable` or `xr` respectively — the only way to recover those classes, since Wear OS emits no distinguishing User-Agent token. Other form-factor values (`Mobile`, `Tablet`, `Desktop`, `EInk`) are ignored because the User-Agent string already exposes them. Form-factor tokens are matched case-sensitively, so a lowercased value cannot promote a class.
+
 ## Reduced User-Agents
 
 Chromium froze most User-Agent detail during its User-Agent reduction: version tails are pinned to `.0.0.0`, Android reports the placeholders `Android 10; K`, and desktop platform tokens are static. UA Compass detects these frozen shapes and sets `result.uaReduced` to `true` instead of reporting placeholders as facts: the fake version tail is trimmed to the real major version, and the frozen `10.15.7` (macOS), `10` (Android), and NT `10.0` (Windows) platform versions are omitted. Supplying Client Hints restores the real values where the browser grants them.

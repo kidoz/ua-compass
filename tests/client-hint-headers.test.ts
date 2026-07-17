@@ -15,6 +15,7 @@ describe("clientHintsFromHeaders", () => {
       "sec-ch-ua-platform-version": '"15.0.0"',
       "sec-ch-ua-model": '"Pixel 9"',
       "sec-ch-ua-arch": '""',
+      "sec-ch-ua-form-factors": '"Watch", "Mobile"',
       "sec-ch-ua-full-version-list":
         '"Chromium";v="138.0.7204.49", "Google Chrome";v="138.0.7204.49", "Not/A)Brand";v="24.0.0.0"',
     });
@@ -33,6 +34,7 @@ describe("clientHintsFromHeaders", () => {
       platform: "Android",
       platformVersion: "15.0.0",
       model: "Pixel 9",
+      formFactors: ["Watch", "Mobile"],
     });
   });
 
@@ -164,5 +166,97 @@ describe("clientHintsFromHeaders", () => {
       "Sec-CH-UA-Mobile": "?1",
     }) as Record<string, unknown>;
     expect(clientHintsFromHeaders(headers)).toBeUndefined();
+  });
+
+  describe("sec-ch-ua-form-factors", () => {
+    // Fixtures below are independently composed from the WICG ua-client-hints
+    // structured-field examples (https://wicg.github.io/ua-client-hints/),
+    // not copied from another parser's corpus.
+
+    it("parses quoted and bare token lists", () => {
+      expect(
+        clientHintsFromHeaders({
+          "sec-ch-ua-form-factors": '"Watch", "Mobile"',
+        }),
+      ).toEqual({ formFactors: ["Watch", "Mobile"] });
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": "Watch, Mobile" }),
+      ).toEqual({ formFactors: ["Watch", "Mobile"] });
+    });
+
+    it("normalizes whitespace and drops empty items", () => {
+      expect(
+        clientHintsFromHeaders({
+          "sec-ch-ua-form-factors": ' Watch , , "XR" ,',
+        }),
+      ).toEqual({ formFactors: ["Watch", "XR"] });
+    });
+
+    it("returns undefined for an empty or whitespace-only header", () => {
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": "   " }),
+      ).toBeUndefined();
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": ", ," }),
+      ).toBeUndefined();
+    });
+
+    it("drops the whole header when any item carries structural garbage", () => {
+      // The grammar restricts bare items to ASCII letters so digits, dashes,
+      // and separators invalidate the list. An unterminated quoted string also
+      // drops the header. (RFC-8941 parameters on a quoted item, e.g.
+      // "Watch";v="1", are structurally valid but meaningless for form-factors,
+      // so the quoted value is accepted and the trailing params are discarded.)
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": '"Watch' }),
+      ).toBeUndefined();
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": "Watch, 3D" }),
+      ).toBeUndefined();
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": "Watch-Mobile" }),
+      ).toBeUndefined();
+      expect(
+        clientHintsFromHeaders({
+          "sec-ch-ua-form-factors": '"Watch";v="1"',
+        }),
+      ).toEqual({ formFactors: ["Watch"] });
+    });
+
+    it("drops the header when the list exceeds the configured limit", () => {
+      const many = Array.from(
+        { length: 9 },
+        (_, index) => `Watch${String(index)}`,
+      ).join(", ");
+      expect(
+        clientHintsFromHeaders({ "sec-ch-ua-form-factors": many }),
+      ).toBeUndefined();
+    });
+
+    it("drops the header when an item exceeds the string length bound", () => {
+      expect(
+        clientHintsFromHeaders({
+          "sec-ch-ua-form-factors": "x".repeat(300),
+        }),
+      ).toBeUndefined();
+    });
+
+    it("keeps unrecognized letter tokens but detection never matches them", () => {
+      // Unknown form-factor tokens are carried through the parser (the WICG
+      // spec may add values over time); case-sensitivity and exact-match are
+      // enforced at detection time, so a lowercased or unrecognized token never
+      // promotes a device class.
+      const hints = clientHintsFromHeaders({
+        "sec-ch-ua-form-factors": "watch, Phablet, EInk",
+      });
+      expect(hints).toEqual({ formFactors: ["watch", "Phablet", "EInk"] });
+    });
+
+    it("returns a frozen form-factors array", () => {
+      const hints = clientHintsFromHeaders({
+        "sec-ch-ua-form-factors": "Watch",
+      });
+      expect(Object.isFrozen(hints?.formFactors)).toBe(true);
+    });
   });
 });

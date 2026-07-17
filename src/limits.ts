@@ -5,5 +5,6 @@ export const MAX_RULES_PER_PACK = 64;
 export const MAX_RULE_TOKENS = 4;
 export const MAX_RULE_STRING_LENGTH = 128;
 export const MAX_HINT_BRANDS = 16;
+export const MAX_HINT_FORM_FACTORS = 8;
 export const MAX_HINT_STRING_LENGTH = 256;
 export const MAX_HINT_HEADER_LENGTH = 2_048;

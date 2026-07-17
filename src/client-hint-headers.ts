@@ -1,5 +1,6 @@
 import {
   MAX_HINT_BRANDS,
+  MAX_HINT_FORM_FACTORS,
   MAX_HINT_HEADER_LENGTH,
   MAX_HINT_STRING_LENGTH,
 } from "./limits.js";
@@ -33,6 +34,7 @@ export function clientHintsFromHeaders(
     architecture?: string;
     bitness?: string;
     model?: string;
+    formFactors?: readonly string[];
   } = {};
 
   const brands = parseBrandList(readHeader(source, "sec-ch-ua", "Sec-CH-UA"));
@@ -75,6 +77,11 @@ export function clientHintsFromHeaders(
   );
   if (model !== undefined) hints.model = model;
 
+  const formFactors = parseFormFactors(
+    readHeader(source, "sec-ch-ua-form-factors", "Sec-CH-UA-Form-Factors"),
+  );
+  if (formFactors !== undefined) hints.formFactors = formFactors;
+
   return Object.keys(hints).length === 0 ? undefined : Object.freeze(hints);
 }
 
@@ -109,6 +116,57 @@ function parseQuotedValue(value: string | undefined): string | undefined {
     return undefined;
   }
   return unquoted;
+}
+
+// Parses a structured-field item list of the form `Watch, Mobile` (bare tokens)
+// or `"Watch", "Mobile"` (quoted tokens). WICG form-factor tokens are
+// case-sensitive ASCII words; unknown tokens are dropped (the spec may add
+// values over time), but a structurally malformed or oversized list drops the
+// whole header so a hostile value cannot smuggle a class change or error out.
+function parseFormFactors(
+  value: string | undefined,
+): readonly string[] | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return undefined;
+
+  const items: string[] = [];
+  for (const raw of trimmed.split(",")) {
+    const token = raw.trim();
+    if (token.length === 0) continue;
+    // A quoted item must be well-formed; any quoting error drops the header.
+    const resolved = token.startsWith('"')
+      ? readQuotedString(token, 0)?.value
+      : token;
+    if (resolved === undefined) return undefined;
+    if (
+      resolved.length === 0 ||
+      resolved.length > MAX_HINT_STRING_LENGTH ||
+      !isFormFactorToken(resolved)
+    ) {
+      // A single non-conformant item invalidates the structured-field list.
+      return undefined;
+    }
+    items.push(resolved);
+    if (items.length > MAX_HINT_FORM_FACTORS) return undefined;
+  }
+  return items.length === 0 ? undefined : Object.freeze(items);
+}
+
+// Form-factor values are ASCII-letter words (WICG uses tokens such as `Watch`,
+// `XR`, `EInk`). Restricting the grammar to letters rejects quoted strings,
+// parameters, separators, and digits from a malformed structured-field list;
+// case-sensitivity is enforced later by exact-match in detection, so a
+// lowercased `watch` is carried through but never matches a recognized class.
+function isFormFactorToken(value: string): boolean {
+  if (value.length === 0) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    const isUpperLetter = code >= 65 && code <= 90;
+    const isLowerLetter = code >= 97 && code <= 122;
+    if (!isUpperLetter && !isLowerLetter) return false;
+  }
+  return true;
 }
 
 // Parses a structured-field list of the form `"Brand";v="1", "Other";v="2"`,

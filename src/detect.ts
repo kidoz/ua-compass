@@ -5,6 +5,7 @@ import type {
   CpuInfo,
   DetectionRule,
   DeviceInfo,
+  DeviceType,
   EngineInfo,
   OperatingSystemInfo,
   ParseResult,
@@ -271,6 +272,26 @@ function applyClientHints(
     });
   }
 
+  if (hints.formFactors !== undefined) {
+    // "Watch" and "XR" are the only form-factor tokens that identify device
+    // classes the UA string cannot express (WICG Sec-CH-UA-Form-Factors,
+    // Chrome 124+). Wear OS emits a phone-like UA, so a "Watch" token may
+    // legitimately arrive over a mobile class. Promote only from
+    // unknown/desktop/mobile: a concrete UA token (tablet, tv, console,
+    // wearable, xr) always wins over the hint.
+    const current = detection.device.type;
+    const promoted = formFactorDeviceType(hints.formFactors);
+    if (
+      promoted !== undefined &&
+      (current === "unknown" || current === "desktop" || current === "mobile")
+    ) {
+      detection.device = compact<DeviceInfo>({
+        ...detection.device,
+        type: promoted,
+      });
+    }
+  }
+
   if (hints.architecture !== undefined && hints.architecture !== "") {
     detection.cpu = compact<CpuInfo>({
       architecture: normalizeArchitecture(hints.architecture, hints.bitness),
@@ -355,6 +376,26 @@ function normalizeArchitecture(
   if (lowered === "arm64") return "arm64";
   if (lowered === "arm") return bitness === "64" ? "arm64" : "arm";
   return architecture;
+}
+
+// Maps a Sec-CH-UA-Form-Factors item list to the device class it uniquely
+// identifies. Only "Watch" and "XR" close real gaps; other tokens (Mobile,
+// Tablet, Desktop, EInk) are ignored because the UA string already carries
+// them. If both Watch and XR appear, Watch wins (an arbitrary but deterministic
+// choice). Case-sensitive: the WICG tokens are capitalized, so a lowercased
+// "watch" must not match.
+function formFactorDeviceType(
+  formFactors: readonly string[],
+): DeviceType | undefined {
+  let hasWatch = false;
+  let hasXr = false;
+  for (const token of formFactors) {
+    if (token === "Watch") hasWatch = true;
+    else if (token === "XR") hasXr = true;
+  }
+  if (hasWatch) return "wearable";
+  if (hasXr) return "xr";
+  return undefined;
 }
 
 function extractVersion(userAgent: string, prefix: string): string | undefined {

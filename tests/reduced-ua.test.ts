@@ -100,4 +100,15 @@ describe("reduced (frozen) User-Agent handling", () => {
     });
     expect(older.os).toEqual({ name: "Windows" });
   });
+
+  it("recovers the wearable class from a Watch form-factor hint on a reduced phone UA", () => {
+    // UA reduction froze the Android model to "K", so the UA alone cannot
+    // reveal a Wear OS watch; the high-entropy form-factor hint is the only
+    // wearable signal available.
+    const result = parse(REDUCED_ANDROID, {
+      clientHints: { formFactors: ["Watch"] },
+    });
+    expect(result.uaReduced).toBe(true);
+    expect(result.device.type).toBe("wearable");
+  });
 });

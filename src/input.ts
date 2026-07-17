@@ -3,6 +3,7 @@ import {
   DEFAULT_MAX_USER_AGENT_LENGTH,
   MAX_CONFIGURED_USER_AGENT_LENGTH,
   MAX_HINT_BRANDS,
+  MAX_HINT_FORM_FACTORS,
   MAX_HINT_STRING_LENGTH,
 } from "./limits.js";
 import { getOwnProperty } from "./own-property.js";
@@ -112,6 +113,7 @@ export function normalizeClientHints(hints: unknown): ClientHints | undefined {
     architecture?: string;
     bitness?: string;
     model?: string;
+    formFactors?: readonly string[];
   } = {};
 
   const brands = getOwnProperty(hints, "brands");
@@ -129,6 +131,10 @@ export function normalizeClientHints(hints: unknown): ClientHints | undefined {
     if (typeof mobile !== "boolean")
       throw new TypeError("clientHints.mobile must be boolean");
     normalized.mobile = mobile;
+  }
+  const formFactors = getOwnProperty(hints, "formFactors");
+  if (formFactors !== undefined) {
+    normalized.formFactors = normalizeFormFactors(formFactors);
   }
 
   for (const key of [
@@ -181,6 +187,22 @@ function normalizeBrands(
         ),
       });
     }),
+  );
+}
+
+function normalizeFormFactors(formFactors: unknown): readonly string[] {
+  if (
+    !Array.isArray(formFactors) ||
+    formFactors.length > MAX_HINT_FORM_FACTORS
+  ) {
+    throw new TypeError(
+      `clientHints.formFactors must contain at most ${String(MAX_HINT_FORM_FACTORS)} items`,
+    );
+  }
+  return Object.freeze(
+    (formFactors as readonly unknown[]).map((item, index): string =>
+      normalizeHintString(item, `formFactors[${String(index)}]`),
+    ),
   );
 }
 

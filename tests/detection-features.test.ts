@@ -209,6 +209,73 @@ describe("Client Hints merge refinements", () => {
   });
 });
 
+// Sec-CH-UA-Form-Factors is a WICG structured-field hint (shipped Chrome 124)
+// whose "Watch" and "XR" tokens identify device classes the UA string cannot
+// express. The cases below verify the conservative precedence rule: form-factor
+// tokens promote only from low-confidence classes (unknown/desktop/mobile) and
+// never override a concrete UA-derived device class.
+describe("Sec-CH-UA-Form-Factors device refinement", () => {
+  it("promotes a phone-like UA to wearable on a Watch token", () => {
+    // A Wear OS UA is structurally identical to a phone UA; the hint is the
+    // only wearable signal available in the HTTP layer.
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["Watch"] } },
+    );
+    expect(result.device.type).toBe("wearable");
+  });
+
+  it("promotes a desktop UA to XR on an XR token", () => {
+    const result = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+      { clientHints: { formFactors: ["XR"] } },
+    );
+    expect(result.device.type).toBe("xr");
+  });
+
+  it("does not override a UA-derived tablet class with a Watch token", () => {
+    const result = parse(
+      "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      { clientHints: { formFactors: ["Watch"] } },
+    );
+    expect(result.device.type).toBe("tablet");
+  });
+
+  it("does not override a UA-derived XR class with a Mobile token", () => {
+    const result = parse(
+      "Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/40.2.0.10.61 Chrome/138.0.7204.235 VR Safari/537.36",
+      { clientHints: { formFactors: ["Mobile"] } },
+    );
+    expect(result.device.type).toBe("xr");
+  });
+
+  it("ignores form-factor tokens that the UA already exposes", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["EInk", "Mobile"] } },
+    );
+    expect(result.device.type).toBe("mobile");
+  });
+
+  it("treats form-factor tokens case-sensitively", () => {
+    // WICG tokens are capitalized; a lowercased token must not promote a class,
+    // so a hostile header cannot smuggle a class change via case folding.
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["watch"] } },
+    );
+    expect(result.device.type).toBe("mobile");
+  });
+
+  it("prefers Watch over XR when both tokens appear", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["XR", "Watch"] } },
+    );
+    expect(result.device.type).toBe("wearable");
+  });
+});
+
 describe("client and device type guards", () => {
   it("recognizes Chromium-family browsers via the Blink engine", () => {
     const chrome = parse(

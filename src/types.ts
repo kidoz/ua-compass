@@ -81,6 +81,7 @@ export interface ClientHints {
   readonly architecture?: string;
   readonly bitness?: string;
   readonly model?: string;
+  readonly formFactors?: readonly string[];
 }
 
 export interface ParseOptions {

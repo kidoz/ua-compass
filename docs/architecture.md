@@ -48,7 +48,11 @@ also bounded and accepts only a restricted token alphabet.
 
 Detection categories remain independent. A browser token does not by itself
 invent an OS or device, and non-browser clients clear browser-specific output.
-Recognized Client Hints refine lower-confidence UA evidence after UA matching.
+Recognized Client Hints refine lower-confidence UA evidence after UA matching:
+mobile and model hints run first, then `Sec-CH-UA-Form-Factors` `"Watch"` and
+`"XR"` tokens may promote a device from `unknown`/`desktop`/`mobile` to
+`wearable`/`xr`. A concrete UA-derived class (tablet, TV, console, wearable, XR)
+always wins over a Client Hint, so a hint never overrides stronger evidence.
 
 ## Data and mutation boundaries
 

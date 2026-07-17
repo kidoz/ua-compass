@@ -350,6 +350,7 @@ describe("security boundaries", () => {
       "sec-ch-ua-arch",
       "sec-ch-ua-bitness",
       "sec-ch-ua-model",
+      "sec-ch-ua-form-factors",
     ];
     for (let sample = 0; sample < 1_000; sample += 1) {
       const headers: Record<string, string> = {};
