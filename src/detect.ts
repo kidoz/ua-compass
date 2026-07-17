@@ -241,9 +241,13 @@ function applyClientHints(
   }
 
   if (hints.mobile !== undefined) {
-    // The mobile hint refines a low-confidence class but must not override a
-    // more specific UA device (tablet, tv, console, wearable, xr): promote to
-    // mobile only from unknown/desktop, and demote a stale mobile to unknown.
+    // Sec-CH-UA-Mobile is a UX-preference boolean (WICG ua-client-hints), not a
+    // hardware-class assertion: ?1 means "prefers a mobile experience" and is
+    // sent by both phones and watches; ?0 means "prefers a non-mobile
+    // experience" and does NOT prove desktop hardware. So promote to mobile only
+    // from unknown/desktop, and demote a contradicting mobile to unknown (never
+    // assert desktop). iOS Safari and Firefox do not send this hint, so a
+    // UA-derived iPhone/mobile class is never clobbered by it.
     const current = detection.device.type;
     const type = hints.mobile
       ? current === "unknown" || current === "desktop"

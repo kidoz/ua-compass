@@ -449,4 +449,23 @@ describe("security boundaries", () => {
     const hostile = `${"Chrome".repeat(10_000)}!`;
     expect(parser.parse(hostile).browser).toEqual({});
   });
+
+  it("demotes a UA-derived mobile class to unknown, never desktop, on mobile:false", () => {
+    // Sec-CH-UA-Mobile is a UX-preference boolean (WICG), not a hardware
+    // assertion: ?0 means "prefers a non-mobile experience" and does not prove
+    // desktop hardware. A contradicting mobile class must collapse to unknown,
+    // never assert desktop. Only Chromium clients send this hint.
+    const androidPhone = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { mobile: false } },
+    );
+    expect(androidPhone.device.type).toBe("unknown");
+
+    // An iPhone UA with no mobile hint present proves the UA token wins
+    // untouched: iOS Safari does not send Sec-CH-UA-Mobile.
+    const iPhone = parse(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    );
+    expect(iPhone.device.type).toBe("mobile");
+  });
 });
