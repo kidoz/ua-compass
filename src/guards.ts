@@ -5,9 +5,36 @@ export function isBot(result: ParseResult): boolean {
   return type === "bot" || type === "crawler" || type === "ai-crawler";
 }
 
+// A narrower view than `isBot`: the crawling/indexing clients (search and AI
+// training crawlers) but not one-shot social-preview or monitoring bots.
+export function isCrawler(result: ParseResult): boolean {
+  const type = result.client.type;
+  return type === "crawler" || type === "ai-crawler";
+}
+
 export function isAiClient(result: ParseResult): boolean {
   const type = result.client.type;
   return type === "ai-crawler" || type === "ai-assistant";
+}
+
+export function isCli(result: ParseResult): boolean {
+  return result.client.type === "cli";
+}
+
+export function isLibrary(result: ParseResult): boolean {
+  return result.client.type === "library";
+}
+
+export function isEmailClient(result: ParseResult): boolean {
+  return result.client.type === "email";
+}
+
+export function isMediaPlayer(result: ParseResult): boolean {
+  return result.client.type === "mediaplayer";
+}
+
+export function isEmbedded(result: ParseResult): boolean {
+  return result.client.type === "embedded";
 }
 
 // Chromium-family browsers all render with Blink. Client-Hints-only parses may
@@ -53,4 +80,20 @@ export function isTablet(result: ParseResult): boolean {
 
 export function isDesktop(result: ParseResult): boolean {
   return result.device.type === "desktop";
+}
+
+export function isTv(result: ParseResult): boolean {
+  return result.device.type === "tv";
+}
+
+export function isConsole(result: ParseResult): boolean {
+  return result.device.type === "console";
+}
+
+export function isWearable(result: ParseResult): boolean {
+  return result.device.type === "wearable";
+}
+
+export function isXr(result: ParseResult): boolean {
+  return result.device.type === "xr";
 }

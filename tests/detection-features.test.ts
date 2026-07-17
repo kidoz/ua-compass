@@ -3,9 +3,19 @@ import { describe, expect, it } from "vitest";
 import {
   createParser,
   isChromeFamily,
+  isCli,
+  isConsole,
+  isCrawler,
   isDesktop,
+  isEmailClient,
+  isEmbedded,
+  isLibrary,
+  isMediaPlayer,
   isMobile,
   isTablet,
+  isTv,
+  isWearable,
+  isXr,
   parse,
 } from "../src/index.js";
 
@@ -324,5 +334,64 @@ describe("client and device type guards", () => {
     );
     expect(isDesktop(desktop)).toBe(true);
     expect(isMobile(desktop)).toBe(false);
+  });
+
+  it("separates tv, console, wearable, and xr device guards", () => {
+    const tv = parse(
+      "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) 85.0.4183.93/6.0 TV Safari/537.36",
+    );
+    expect(isTv(tv)).toBe(true);
+    expect(isConsole(tv)).toBe(false);
+
+    const console_ = parse(
+      "Mozilla/5.0 (PlayStation; PlayStation 5/2.26) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Safari/605.1.15",
+    );
+    expect(isConsole(console_)).toBe(true);
+    expect(isTv(console_)).toBe(false);
+
+    const wearable = parse(
+      "Mozilla/5.0 (Apple Watch; CPU WatchOS 10_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+    );
+    expect(isWearable(wearable)).toBe(true);
+    expect(isXr(wearable)).toBe(false);
+
+    const xr = parse(
+      "Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/40.2.0.10.61 Chrome/138.0.7204.235 VR Safari/537.36",
+    );
+    expect(isXr(xr)).toBe(true);
+    expect(isWearable(xr)).toBe(false);
+  });
+
+  it("separates crawler, cli, library, email, media-player, and embedded client guards", () => {
+    const crawler = parse(
+      "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    );
+    expect(isCrawler(crawler)).toBe(true);
+
+    // A social-preview bot is not a crawler: it fetches once per share, not to
+    // build an index. `isBot` stays the umbrella; `isCrawler` is narrower.
+    const previewBot = parse(
+      "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    );
+    expect(isCrawler(previewBot)).toBe(false);
+
+    const cli = parse("curl/8.4.0");
+    expect(isCli(cli)).toBe(true);
+
+    const library = parse("python-requests/2.31.0");
+    expect(isLibrary(library)).toBe(true);
+
+    const email = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Thunderbird/115.6.0",
+    );
+    expect(isEmailClient(email)).toBe(true);
+
+    const media = parse("VLC/3.0.20 LibVLC/3.0.20");
+    expect(isMediaPlayer(media)).toBe(true);
+
+    const embedded = parse(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) SampleApp/1.0 Chrome/122.0.6261.120 Electron/28.1.0 Safari/537.36",
+    );
+    expect(isEmbedded(embedded)).toBe(true);
   });
 });

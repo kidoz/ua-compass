@@ -31,7 +31,7 @@ I/O or inspect the host environment during import.
 | `src/rule-validation.ts`     | Runtime validation, limits, copying, and freezing of custom rules.                              |
 | `src/bundled-rules.ts`       | Independently authored literal-token detection rules in precedence order.                       |
 | `src/detect.ts`              | Rule bucketing, matching, Client Hints refinement, result normalization, and freezing.          |
-| `src/guards.ts`              | Boolean classification helpers over `ParseResult`.                                              |
+| `src/guards.ts`              | Boolean classification helpers over `ParseResult` for client and device types.                  |
 | `src/types.ts`               | Public API contracts and declarative rule schema.                                               |
 | `src/limits.ts`              | Security and resource ceilings shared by normalization and validation.                          |
 

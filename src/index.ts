@@ -4,9 +4,19 @@ export {
   isAiClient,
   isBot,
   isChromeFamily,
+  isCli,
+  isConsole,
+  isCrawler,
   isDesktop,
+  isEmailClient,
+  isEmbedded,
+  isLibrary,
+  isMediaPlayer,
   isMobile,
   isTablet,
+  isTv,
+  isWearable,
+  isXr,
 } from "./guards.js";
 export { DEFAULT_MAX_USER_AGENT_LENGTH } from "./limits.js";
 export { createParser, parse } from "./parser.js";

@@ -43,7 +43,7 @@ UA Compass is a secure, dependency-free parser for User-Agent strings and struct
 - **Zero runtime dependencies** — ESM-only, no DOM access, no I/O, no import-time side effects.
 - **Bot and AI-client detection** — classifies crawlers, AI crawlers, AI assistants, CLI tools, HTTP libraries, email clients, media players, and embedded runtimes (Electron).
 - **XR and wearable devices** — recognizes Meta Quest headsets (`xr`) and Apple Watch / Wear OS wearables alongside desktop, mobile, tablet, TV, and console classes.
-- **Classification helpers** — `isBot`, `isAiClient`, `isChromeFamily`, `isMobile`, `isTablet`, and `isDesktop` provide concise boolean checks over parsed results.
+- **Classification helpers** — a full set of boolean guards over parsed results: `isBot`, `isCrawler`, `isAiClient`, `isChromeFamily`, plus device-type (`isMobile`, `isTablet`, `isDesktop`, `isTv`, `isConsole`, `isWearable`, `isXr`) and client-type (`isCli`, `isLibrary`, `isEmailClient`, `isMediaPlayer`, `isEmbedded`) checks.
 
 ## Installation
 
@@ -171,8 +171,10 @@ Future imported detection data or fixtures must record their source, author, ret
 - `ParserOptions` controls input limits, overflow behavior, and custom rule packs.
 - `ParseOptions` supplies structured Client Hints per call.
 - `clientHintsFromHeaders(headers)` normalizes raw `Sec-CH-UA*` headers into `ClientHints`.
-- `isBot(result)` returns true for bots, crawlers, and AI crawlers; `isAiClient(result)` covers AI crawlers and user-triggered AI assistants.
-- `isChromeFamily(result)` recognizes Blink-engine or known Chromium-family results; `isMobile`, `isTablet`, and `isDesktop` check `device.type`.
+- `isBot(result)` returns true for bots, crawlers, and AI crawlers; `isCrawler(result)` is the narrower crawling/indexing view (search and AI-training crawlers); `isAiClient(result)` covers AI crawlers and user-triggered AI assistants.
+- `isChromeFamily(result)` recognizes Blink-engine or known Chromium-family results.
+- Device-type guards: `isMobile`, `isTablet`, `isDesktop`, `isTv`, `isConsole`, `isWearable`, and `isXr`.
+- Client-type guards: `isCli`, `isLibrary`, `isEmailClient`, `isMediaPlayer`, and `isEmbedded`.
 - `InputLimitError` and `RuleValidationError` distinguish predictable boundary failures.
 
 `client.type` can be `browser`, `webview`, `bot`, `crawler`, `ai-crawler`, `ai-assistant`, `cli`, `library`, `email`, `mediaplayer`, `embedded`, or `unknown`. AI training and search crawlers (GPTBot, ClaudeBot, OAI-SearchBot, CCBot, and others) report `ai-crawler`; user-triggered AI fetchers (ChatGPT-User, Claude-User, Perplexity-User) report `ai-assistant`. Email clients (Thunderbird, Outlook), media players (VLC, iTunes, Kodi, AppleCoreMedia), and Electron apps report `email`, `mediaplayer`, and `embedded` respectively. Non-browser clients leave `browser` empty. A User-Agent match identifies who a client claims to be — it is not verification, so treat bot classification as advisory rather than authentication.
