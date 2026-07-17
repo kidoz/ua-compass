@@ -19,6 +19,8 @@ export {
   isXr,
 } from "./guards.js";
 export { clientHintsFromUserAgentData } from "./input.js";
+export { fetchIntent } from "./intent.js";
+export type { FetchIntent } from "./intent.js";
 export { DEFAULT_MAX_USER_AGENT_LENGTH } from "./limits.js";
 export { createParser, parse } from "./parser.js";
 export type {
