@@ -37,6 +37,7 @@ export type {
   DeviceType,
   EngineInfo,
   EngineRuleResult,
+  Evidence,
   InputOverflowBehavior,
   OperatingSystemInfo,
   OperatingSystemRuleResult,

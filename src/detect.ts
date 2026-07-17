@@ -7,6 +7,7 @@ import type {
   DeviceInfo,
   DeviceType,
   EngineInfo,
+  Evidence,
   OperatingSystemInfo,
   ParseResult,
   RuleResult,
@@ -20,6 +21,8 @@ interface MutableDetection {
   cpu: CpuInfo;
   client: ClientInfo;
 }
+
+type MutableEvidence = Partial<Record<keyof Evidence, string>>;
 
 // Rules bucketed by target so each detection pass scans only its own target's
 // candidates (in original precedence order) rather than the whole rule list.
@@ -46,6 +49,7 @@ export function detect(
   userAgent: string,
   clientHints: ClientHints | undefined,
   rules: CompiledRules,
+  captureEvidence: boolean,
 ): ParseResult {
   const detection: MutableDetection = {
     browser: compact<BrowserInfo>({}),
@@ -56,15 +60,28 @@ export function detect(
     client: compact<ClientInfo>({ type: "unknown" }),
   };
   const uaReduced = isReducedUserAgent(userAgent);
+  // Keep the default path allocation-free for evidence. The null-prototype
+  // record is created only for parsers that explicitly enable tracing.
+  const evidence = captureEvidence
+    ? (Object.create(null) as MutableEvidence)
+    : undefined;
 
-  applyFirstRule("client", userAgent, rules, detection);
-  if (detection.client.type === "unknown")
-    applyFirstRule("browser", userAgent, rules, detection);
-  applyFirstRule("engine", userAgent, rules, detection);
-  applyFirstRule("os", userAgent, rules, detection);
-  applyFirstRule("device", userAgent, rules, detection);
-  applyFirstRule("cpu", userAgent, rules, detection);
+  applyFirstRule("client", userAgent, rules, detection, evidence);
+  if (detection.client.type === "unknown") {
+    applyFirstRule("browser", userAgent, rules, detection, evidence);
+  }
+  applyFirstRule("engine", userAgent, rules, detection, evidence);
+  applyFirstRule("os", userAgent, rules, detection, evidence);
+  applyFirstRule("device", userAgent, rules, detection, evidence);
+  applyFirstRule("cpu", userAgent, rules, detection, evidence);
   if (uaReduced) scrubReducedArtifacts(detection);
+  // Surface Android's MODEL token when the OS detector independently confirms
+  // Android and no more specific device rule already supplied a model.
+  if (detection.os.name === "Android" && detection.device.model === undefined) {
+    const model = extractAndroidModel(userAgent, uaReduced);
+    if (model !== undefined)
+      detection.device = compact<DeviceInfo>({ ...detection.device, model });
+  }
   applyClientHints(clientHints, detection);
 
   if (
@@ -75,7 +92,7 @@ export function detect(
     detection.browser = compact<BrowserInfo>({});
   }
 
-  return freezeResult(userAgent, uaReduced, detection);
+  return freezeResult(userAgent, uaReduced, detection, evidence);
 }
 
 // Chromium froze the minor.build.patch version segments to "0.0.0" and the
@@ -134,12 +151,14 @@ function applyFirstRule(
   userAgent: string,
   rules: CompiledRules,
   detection: MutableDetection,
+  evidence: MutableEvidence | undefined,
 ): void {
   const candidates = rules[target];
   if (candidates === undefined) return;
   for (const candidate of candidates) {
     if (!matches(userAgent, candidate)) continue;
     applyRuleResult(candidate, userAgent, detection);
+    if (evidence !== undefined) evidence[target] = candidate.id;
     return;
   }
 }
@@ -379,22 +398,27 @@ function normalizeArchitecture(
 }
 
 // Maps a Sec-CH-UA-Form-Factors item list to the device class it uniquely
-// identifies. Only "Watch" and "XR" close real gaps; other tokens (Mobile,
-// Tablet, Desktop, EInk) are ignored because the UA string already carries
-// them. If both Watch and XR appear, Watch wins (an arbitrary but deterministic
-// choice). Case-sensitive: the WICG tokens are capitalized, so a lowercased
-// "watch" must not match.
+// identifies. "Watch" and "XR" close real gaps (the UA cannot express them),
+// and "Tablet" can refine a reduced Android UA whose model is frozen to "K"
+// (a tablet otherwise resolves to mobile because the compatibility `Mobile`
+// token is present). "Mobile", "Desktop", and "EInk" stay no-ops because the
+// UA already carries them. Precedence when multiple tokens appear is Watch >
+// XR > Tablet (arbitrary but deterministic). Case-sensitive: WICG tokens are
+// capitalized, so a lowercased value must not match.
 function formFactorDeviceType(
   formFactors: readonly string[],
 ): DeviceType | undefined {
   let hasWatch = false;
   let hasXr = false;
+  let hasTablet = false;
   for (const token of formFactors) {
     if (token === "Watch") hasWatch = true;
     else if (token === "XR") hasXr = true;
+    else if (token === "Tablet") hasTablet = true;
   }
   if (hasWatch) return "wearable";
   if (hasXr) return "xr";
+  if (hasTablet) return "tablet";
   return undefined;
 }
 
@@ -420,6 +444,84 @@ function extractVersion(userAgent: string, prefix: string): string | undefined {
 
 function normalizeOsVersion(version: string | undefined): string | undefined {
   return version?.replaceAll("_", ".");
+}
+
+const MAX_ANDROID_MODEL_LENGTH = 128;
+
+// Reads MODEL from the Android CDD WebView shape
+// `Android <version>; [<model>] [Build/<build>];`. Standalone browsers commonly
+// expose the same observable segment without `; wv`. Older shapes may place a
+// locale-like segment before the model, so a narrow locale token is skipped
+// only when another segment follows. The bounded scan returns unknown rather
+// than surfacing build ids, locales, placeholders, or oversized values.
+function extractAndroidModel(
+  userAgent: string,
+  uaReduced: boolean,
+): string | undefined {
+  const androidIndex = userAgent.indexOf("Android ");
+  if (androidIndex < 0) return undefined;
+  let cursor = androidIndex + "Android ".length;
+  while (cursor < userAgent.length) {
+    const code = userAgent.charCodeAt(cursor);
+    const isVersionChar =
+      (code >= 48 && code <= 57) || code === 46 || code === 95;
+    if (!isVersionChar) break;
+    cursor += 1;
+  }
+  if (userAgent.charAt(cursor) !== ";") return undefined;
+  cursor += 1;
+
+  while (cursor < userAgent.length) {
+    let end = cursor;
+    while (end < userAgent.length) {
+      const code = userAgent.charCodeAt(end);
+      if (code === 59 || code === 41) break; // ";" or ")"
+      end += 1;
+    }
+
+    const segment = userAgent.slice(cursor, end).trim();
+    const buildIndex = segment.indexOf(" Build/");
+    const candidate = (
+      buildIndex < 0 ? segment : segment.slice(0, buildIndex)
+    ).trim();
+    const anotherSegmentFollows = userAgent.charAt(end) === ";";
+
+    if (
+      candidate.length > 0 &&
+      candidate.length <= MAX_ANDROID_MODEL_LENGTH &&
+      !candidate.startsWith("Build/") &&
+      candidate !== "wv" &&
+      !(uaReduced && candidate === "K") &&
+      !(anotherSegmentFollows && isLocaleLikeAndroidSegment(candidate))
+    ) {
+      return candidate;
+    }
+
+    if (!anotherSegmentFollows) return undefined;
+    cursor = end + 1;
+  }
+  return undefined;
+}
+
+function isLocaleLikeAndroidSegment(value: string): boolean {
+  if (value.length < 5 || value.length > 7) return false;
+  let separatorIndex = -1;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    const isLetter = (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+    if (isLetter) continue;
+    if ((code === 45 || code === 95) && separatorIndex < 0) {
+      separatorIndex = index;
+      continue;
+    }
+    return false;
+  }
+  return (
+    separatorIndex >= 2 &&
+    separatorIndex <= 3 &&
+    value.length - separatorIndex - 1 >= 2 &&
+    value.length - separatorIndex - 1 <= 3
+  );
 }
 
 // On Windows, Sec-CH-UA-Platform-Version reports the build-derived version
@@ -468,6 +570,7 @@ function freezeResult(
   userAgent: string,
   uaReduced: boolean,
   detection: MutableDetection,
+  evidence: MutableEvidence | undefined,
 ): ParseResult {
   const browser = Object.freeze(detection.browser);
   const engine = Object.freeze(detection.engine);
@@ -485,6 +588,7 @@ function freezeResult(
       device,
       cpu,
       client,
+      ...(evidence === undefined ? {} : { evidence: Object.freeze(evidence) }),
     }),
   );
 }

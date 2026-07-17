@@ -192,8 +192,10 @@ describe("public parser", () => {
   it("uses a negative mobile hint to discard a lower-confidence mobile classification", () => {
     const userAgent =
       "Mozilla/5.0 (Linux; Android 14; Example) AppleWebKit/537.36 Chrome/143.0.0.0 Mobile Safari/537.36";
+    // The mobile demotion collapses `type` to unknown; the UA-derived model
+    // ("Example") is independent evidence and is preserved.
     expect(parse(userAgent, { clientHints: { mobile: false } }).device).toEqual(
-      { type: "unknown" },
+      { type: "unknown", model: "Example" },
     );
   });
 

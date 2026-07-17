@@ -38,7 +38,12 @@ class CompassParser implements Parser {
   public parse(userAgent: string, options?: ParseOptions): ParseResult {
     const normalizedUserAgent = normalizeUserAgent(userAgent, this.#options);
     const clientHints = getClientHints(options);
-    return detect(normalizedUserAgent, clientHints, this.#rules);
+    return detect(
+      normalizedUserAgent,
+      clientHints,
+      this.#rules,
+      this.#options.evidence,
+    );
   }
 }
 

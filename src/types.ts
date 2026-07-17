@@ -65,6 +65,20 @@ export interface ParseResult {
   readonly device: DeviceInfo;
   readonly cpu: CpuInfo;
   readonly client: ClientInfo;
+  readonly evidence?: Evidence;
+}
+
+// Matched-rule trace, populated only when `ParserOptions.evidence` is true.
+// Each field holds the id of the bundled or custom rule that matched, or is
+// absent when no rule matched that category. Client-Hint refinements are not
+// rule-based and are not recorded here.
+export interface Evidence {
+  readonly browser?: string;
+  readonly engine?: string;
+  readonly os?: string;
+  readonly device?: string;
+  readonly client?: string;
+  readonly cpu?: string;
 }
 
 export interface ClientHintBrand {
@@ -155,6 +169,7 @@ export interface ParserOptions {
   readonly maxUserAgentLength?: number;
   readonly overflowBehavior?: InputOverflowBehavior;
   readonly customRulePacks?: readonly RulePack[];
+  readonly evidence?: boolean;
 }
 
 export interface Parser {

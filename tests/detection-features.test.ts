@@ -395,3 +395,99 @@ describe("client and device type guards", () => {
     expect(isEmbedded(embedded)).toBe(true);
   });
 });
+
+// The Android CDD exposes MODEL before an optional Build/ identifier. UA Compass
+// surfaces only the model when no more specific device rule set one. These
+// fixtures are independently composed from the documented format.
+describe("Android device model extraction", () => {
+  it("surfaces the model and removes the Build/ identifier", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A.230805.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+    );
+    expect(result.device).toEqual({ type: "mobile", model: "Pixel 7" });
+  });
+
+  it("skips a legacy locale segment before the model", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; Nexus 5 Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36",
+    );
+    expect(result.device.model).toBe("Nexus 5");
+  });
+
+  it("does not override an explicit model set by a more specific device rule", () => {
+    // iPhone sets an explicit model via a device rule; the Android extractor
+    // must never clobber it (and would not match anyway since there is no
+    // `Android ` token).
+    const result = parse(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    );
+    expect(result.device).toEqual({
+      type: "mobile",
+      vendor: "Apple",
+      model: "iPhone",
+    });
+  });
+
+  it("skips the UA-reduction placeholder K", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+    );
+    expect(result.uaReduced).toBe(true);
+    expect(result.device.model).toBeUndefined();
+  });
+
+  it("skips a Build/ fragment, a lone locale, and an oversized model", () => {
+    const buildOnly = parse(
+      "Mozilla/5.0 (Linux; Android 13; Build/TP1A.220624.014) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+    );
+    expect(buildOnly.device.model).toBeUndefined();
+
+    const localeOnly = parse(
+      "Mozilla/5.0 (Linux; Android 13; en-us; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/122.0.6261.120 Mobile Safari/537.36",
+    );
+    expect(localeOnly.device.model).toBeUndefined();
+
+    const oversized = parse(
+      `Mozilla/5.0 (Linux; Android 13; ${"X".repeat(129)}) AppleWebKit/537.36 Chrome/122.0.6261.120 Mobile Safari/537.36`,
+    );
+    expect(oversized.device.model).toBeUndefined();
+  });
+
+  it("lets a Sec-CH-UA-Model hint override the UA-derived model", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { model: "Pixel 8" } },
+    );
+    expect(result.device.model).toBe("Pixel 8");
+  });
+});
+
+// Sec-CH-UA-Form-Factors "Tablet" can refine a reduced Android tablet whose
+// model is frozen to "K" (it otherwise resolves to mobile because the
+// compatibility `Mobile` token is present). A concrete UA-derived tablet class
+// always wins over the hint.
+describe("Form-Factors Tablet refinement", () => {
+  it("promotes a reduced Android mobile UA to tablet on a Tablet token", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["Tablet"] } },
+    );
+    expect(result.device.type).toBe("tablet");
+  });
+
+  it("does not override a UA-derived tablet class with a Mobile token", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Safari/537.36",
+      { clientHints: { formFactors: ["Mobile"] } },
+    );
+    expect(result.device.type).toBe("tablet");
+  });
+
+  it("keeps Watch precedence over Tablet when both appear", () => {
+    const result = parse(
+      "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.120 Mobile Safari/537.36",
+      { clientHints: { formFactors: ["Tablet", "Watch"] } },
+    );
+    expect(result.device.type).toBe("wearable");
+  });
+});

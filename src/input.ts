@@ -16,6 +16,7 @@ import type {
 export interface NormalizedParserOptions {
   readonly maxUserAgentLength: number;
   readonly overflowBehavior: InputOverflowBehavior;
+  readonly evidence: boolean;
 }
 
 export function normalizeParserOptions(
@@ -41,9 +42,18 @@ export function normalizeParserOptions(
     throw new TypeError('overflowBehavior must be "throw" or "truncate"');
   }
 
+  const configuredEvidence = getOwnProperty(options, "evidence");
+  if (
+    configuredEvidence !== undefined &&
+    typeof configuredEvidence !== "boolean"
+  ) {
+    throw new TypeError("evidence must be boolean");
+  }
+
   return Object.freeze({
     maxUserAgentLength: configuredMaximum,
     overflowBehavior: configuredOverflow,
+    evidence: configuredEvidence === true,
   });
 }
 
