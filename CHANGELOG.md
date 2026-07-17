@@ -2,6 +2,12 @@
 
 All notable changes follow semantic versioning.
 
+## 1.1.0 - 2026-07-17
+
+- Add `ClientHints.formFactors` and parse the `Sec-CH-UA-Form-Factors` header in `clientHintsFromHeaders()`, with a bounded structured-field list (`MAX_HINT_FORM_FACTORS`) that drops the whole header on any malformed, oversized, or non-conformant item.
+- Promote an `unknown`/`desktop`/`mobile` device to `wearable` or `xr` from the case-sensitive `"Watch"` and `"XR"` form-factor tokens — the only way to recover those classes when Wear OS and some XR runtimes emit no distinguishing User-Agent token — while a concrete UA device class always wins over the hint.
+- Document `Sec-CH-UA-Mobile` as a UX-preference signal rather than a hardware assertion: `?1` promotes only from `unknown`/`desktop`, `?0` demotes a contradicting `mobile` to `unknown` instead of asserting `desktop`, and browsers that omit the hint never clobber a UA-derived class.
+
 ## 1.0.0 - 2026-07-17
 
 - Scaffold the ESM-only TypeScript package and explicit root export.
