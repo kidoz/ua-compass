@@ -30,6 +30,9 @@
   },
   "packageManager": "pnpm@11.13.1",
   "sideEffects": false,
+  "bin": {
+    "ua-compass": "./dist/cli.js"
+  },
   "files": [
     "dist",
     "docs",
@@ -48,13 +51,14 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "node scripts/clean.ts",
-    "build": "pnpm clean && tsc -p tsconfig.build.json",
+    "build": "pnpm clean && tsc -p tsconfig.build.json && tsc -p tsconfig.cli.json",
+    "cli": "node dist/cli.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit && tsc -p tsconfig.browser-test.json --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit && tsc -p tsconfig.browser-test.json --noEmit && tsc -p tsconfig.cli.json --noEmit",
+    "test": "pnpm build && vitest run",
+    "test:coverage": "pnpm build && vitest run --coverage",
     "test:types": "pnpm build && tsc -p type-tests/tsconfig.json",
     "test:browser": "pnpm build && pnpm scripts:prepare && tsc -p tsconfig.browser-test.json && node .script-results/browser-smoke.js",
     "scripts:prepare": "tsc -p tsconfig.scripts.json",

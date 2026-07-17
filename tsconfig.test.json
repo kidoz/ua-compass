@@ -13,5 +13,6 @@
     "tests/**/*.ts",
     "benchmarks/**/*.ts",
     "vitest.config.ts"
-  ]
+  ],
+  "exclude": ["src/cli.ts"]
 }

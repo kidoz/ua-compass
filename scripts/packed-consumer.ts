@@ -79,6 +79,23 @@ if (parsed.client.name !== "curl" || parse("").client.type !== "unknown") {
     ],
     { cwd: consumerDirectory, stdio: "inherit" },
   );
+  const cliExecutable = join(
+    consumerDirectory,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "ua-compass.cmd" : "ua-compass",
+  );
+  const cliOutput = execFileSync(cliExecutable, ["curl/8.12.1"], {
+    cwd: consumerDirectory,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  const cliResult = JSON.parse(cliOutput) as {
+    readonly client?: { readonly name?: string };
+  };
+  if (cliResult.client?.name !== "curl") {
+    throw new Error("Packed CLI returned an unexpected result");
+  }
   execFileSync(
     process.execPath,
     [

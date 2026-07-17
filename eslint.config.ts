@@ -7,6 +7,7 @@ export default tseslint.config(
   },
   {
     files: ["src/**/*.ts", "tests/**/*.ts"],
+    ignores: ["src/cli.ts", "tests/cli.test.ts"],
     extends: [
       eslint.configs.recommended,
       tseslint.configs.strictTypeChecked,
@@ -53,6 +54,27 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         project: ["./tsconfig.scripts.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+    },
+  },
+  {
+    // The CLI and its subprocess test legitimately use Node APIs; lint them
+    // against Node-typed tsconfigs so `process` and `node:` imports resolve.
+    // The CLI ships under tsconfig.cli.json; the test compiles under
+    // tsconfig.test.json (which carries Node types).
+    files: ["src/cli.ts", "tests/cli.test.ts"],
+    extends: [
+      eslint.configs.recommended,
+      tseslint.configs.strictTypeChecked,
+      tseslint.configs.stylisticTypeChecked,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ["./tsconfig.cli.json", "./tsconfig.test.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
