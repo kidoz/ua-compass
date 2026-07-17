@@ -30,7 +30,9 @@ I/O or inspect the host environment during import.
 | `src/client-hint-headers.ts` | Bounded, regex-free conversion of raw `Sec-CH-UA*` headers.                                                                                              |
 | `src/rule-validation.ts`     | Runtime validation, limits, copying, and freezing of custom rules.                                                                                       |
 | `src/bundled-rules.ts`       | Independently authored literal-token detection rules in precedence order.                                                                                |
-| `src/detect.ts`              | Rule bucketing, matching, Client Hints refinement, result normalization, and freezing.                                                                   |
+| `src/detect.ts`              | Rule bucketing, matching, Client Hints refinement, Android model extraction, evidence capture, result normalization, and freezing.                       |
+| `src/intent.ts`              | Advisory fetch-intent classification over `ParseResult`.                                                                                                 |
+| `src/cli.ts`                 | Node CLI entry point (`bin`); reads argv/stdin, prints JSON. Built under its own tsconfig; not part of the importable library graph.                     |
 | `src/guards.ts`              | Boolean classification helpers over `ParseResult` for client and device types.                                                                           |
 | `src/types.ts`               | Public API contracts and declarative rule schema.                                                                                                        |
 | `src/limits.ts`              | Security and resource ceilings shared by normalization and validation.                                                                                   |
@@ -49,15 +51,18 @@ also bounded and accepts only a restricted token alphabet.
 Detection categories remain independent. A browser token does not by itself
 invent an OS or device, and non-browser clients clear browser-specific output.
 Recognized Client Hints refine lower-confidence UA evidence after UA matching:
-mobile and model hints run first, then `Sec-CH-UA-Form-Factors` `"Watch"` and
-`"XR"` tokens may promote a device from `unknown`/`desktop`/`mobile` to
-`wearable`/`xr`. A concrete UA-derived class (tablet, TV, console, wearable, XR)
-always wins over a Client Hint, so a hint never overrides stronger evidence.
+mobile and model hints run first, then `Sec-CH-UA-Form-Factors` `"Watch"`,
+`"XR"`, and `"Tablet"` tokens may promote a device from
+`unknown`/`desktop`/`mobile` to `wearable`/`xr`/`tablet`. A concrete UA-derived
+class (tablet, TV, console, wearable, XR) always wins over a Client Hint, so a
+hint never overrides stronger evidence.
 
 ## Data and mutation boundaries
 
 - Input strings are rejected or truncated at a configured limit and malformed
   UTF-16 surrogate code units are replaced deterministically.
+- CLI stdin is byte-bounded before decoding and then passes through the same
+  exact UTF-16 input limit as the library API.
 - Public object inputs are read through own-property checks, preventing
   inherited values from altering configuration or results.
 - Custom rules are validated, copied, and frozen before use; caller mutation

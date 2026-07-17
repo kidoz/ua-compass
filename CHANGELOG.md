@@ -2,6 +2,15 @@
 
 All notable changes follow semantic versioning.
 
+## Unreleased
+
+- Surface Android `device.model` from the documented `Android <version>; [<model>] [Build/<build>]` segment when no more specific device rule applies; strip build identifiers and skip locale-like, reduced, empty, and oversized values. A `Sec-CH-UA-Model` hint still overrides it.
+- Promote an `unknown`/`desktop`/`mobile` device to `tablet` from the `"Tablet"` form-factor token (useful for reduced Android tablets whose model is frozen to `K`), while keeping Watch/XR precedence and UA-class-wins-over-hint semantics.
+- Add opt-in `ParserOptions.evidence` to capture which bundled or custom rule id matched each category onto `ParseResult.evidence`; off by default without allocating an evidence record.
+- Add `fetchIntent(result)` advisory helper mapping known clients to documented purposes and preserving ambiguous automation or unknown clients as `automated-fetch` or `unknown`.
+- Add a `ua-compass` CLI (`npx ua-compass "<ua>"`) that parses a User-Agent string to JSON from argv or bounded stdin, with `--evidence`, `--stdin`, `--help`, and `--` end-of-options flags.
+- Add `clientHintsFromUserAgentData()` browser-side adapter and the complete client/device type-guard set (`isCrawler`, `isCli`, `isLibrary`, `isEmailClient`, `isMediaPlayer`, `isEmbedded`, `isTv`, `isConsole`, `isWearable`, `isXr`).
+
 ## 1.1.0 - 2026-07-17
 
 - Add `ClientHints.formFactors` and parse the `Sec-CH-UA-Form-Factors` header in `clientHintsFromHeaders()`, with a bounded structured-field list (`MAX_HINT_FORM_FACTORS`) that drops the whole header on any malformed, oversized, or non-conformant item.
